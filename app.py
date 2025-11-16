@@ -95,7 +95,7 @@ if st.session_state.runs > 0:
     # Tabla acumulada
     if not st.session_state.combined_report.empty:
         st.dataframe(st.session_state.combined_report, use_container_width=True, height=260)
-        tsv_bytes = st.session_state.combined_report.to_csv(sep="\t", index=False).encode("utf-8")
+        tes = st.session_state.combined_report.to_csv(sep="\t", index=False).encode("utf-8")
         st.download_button("⬇️ Descargar report.tsv (acumulado)", tsv_bytes, file_name="report.tsv", mime="text/tab-separated-values")
     else:
         st.info("Aún no hay filas en el **report.tsv** acumulado.")
