@@ -26,7 +26,7 @@ master_students_8G = [
     "Matias De Leon Caceres","Mateo Montero Cano","Meidy Sem Cheng","Rian Ahir Ahir","Ryan Melendez Smith",
     "Samantha Valero Bracamonte","Sara Morales Aguilera","Sarah Aguilar Espinosa","Sophia Rodriguez Valenzuela",
     "Steven Lai Zhong","Victoria Pérez Garcia","Williams Luo Qiu","Williams Luo Yang","Ximena Ramos Wilches",
-    "Yesenia Li Qiu"
+    "Yesenia Li Qiu", "Zahid Amor Ladron De Guevara"
 ]
 
 master_students_9A = [
