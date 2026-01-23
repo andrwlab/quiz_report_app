@@ -33,7 +33,7 @@ master_students_9A = [
     "Adrian Fernandez","Allison Chock Kong","Analia Gomez","Angela Li Fang","Andres Lan Lan",
     "Antonio Zhu Zhang","Brian Chen Wen","Carlos Luo Luo","David Li Hou","Dylan Rodriguez Delgado",
     "Dylan Sanjur Navarro","Gabriel Sanchez Serrano","Guohong Xu","Ian Espino Almanza",
-    "Isabella Cordero Solano","Ivanna Acosta Aguilar","Jose Bertorelli Fernandez","Jorge He Luo",
+    "Isabella Cordero Solano","Jose Bertorelli Fernandez","Jorge He Luo",
     "Juan Bonilla Llanos","Justyn Wei Zhang","Karina Luo Luo","Kenny Qiu Zhu","Kevin Wen Zhang",
     "Kristal Cordoba Gooden","Leah Navarro","Luciana Ruiz Riveros","Paola Teng Arauz","Ray Cheung Luo",
     "Winston Chen Zhu","Yoselin Shen Chen","Zhiye Chen Li"
