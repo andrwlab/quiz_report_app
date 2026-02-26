@@ -40,7 +40,7 @@ master_students_9A = [
 ]
 
 master_students_10A = [
-    "Alexandra Aizpurua Culiolis","Angui Zhang Qiu","Anyi Zhang Zhong","Camila Gonzalez Lopez",
+    "Angui Zhang Qiu","Anyi Zhang Zhong","Camila Gonzalez Lopez",
     "Danny Tang Zhong","Edwuar Qiu Wu","Gabriel Chen De Leon","Heidi Sem Cheng","Helen Fu Chen",
     "Jason Wen Hou","Jassek Cajar Muñoz","Jeniffer He Wen","Joanny Hou Zhang","Kelly Nie Nie",
     "Lauren Tapia Frias","Lucas Wu Luo","Mariangel Castro Ortega","Marcos Luo Zhong",
