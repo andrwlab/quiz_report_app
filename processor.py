@@ -59,9 +59,9 @@ def extraer_nombre(nombre):
     if str(nombre).strip() == "Dylan Sanjur Navarro":
         return "Dylan S"
     if str(nombre).strip() == "Kelly Qiu Luo":
-        return "Kelly Qiu"
+        return "Kelly Q"
     if str(nombre).strip() == "Kelly Xu Deng":
-        return "Kelly Xu"
+        return "Kelly X"
     if str(nombre).strip() == "Sofia Guevara":
         return "Sofia G"
     if str(nombre).strip() == "Sofia Zhu Wu":
