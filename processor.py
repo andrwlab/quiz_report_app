@@ -94,6 +94,19 @@ def _pick_master(sheet_name: str):
     return []
 
 
+def _sheet_sort_key(sheet_name: str):
+    """Ordena hojas por grado y deja 10A al final."""
+    if sheet_name.startswith("2526-07") or "MI" in sheet_name:
+        return (0, sheet_name)
+    if sheet_name.startswith("2526-08") or "MJ" in sheet_name:
+        return (1, sheet_name)
+    if sheet_name.startswith("2526-09") or "MK" in sheet_name:
+        return (2, sheet_name)
+    if sheet_name.startswith("2526-00") or "ML" in sheet_name:
+        return (4, sheet_name)
+    return (3, sheet_name)
+
+
 def process_workbook(file_bytes: bytes):
     """
     Lee un archivo Excel desde bytes y devuelve:
@@ -105,7 +118,7 @@ def process_workbook(file_bytes: bytes):
     report_rows = []
     pending_blocks = []
 
-    for sheet_name in sorted(sheets_noheader.keys()):
+    for sheet_name in sorted(sheets_noheader.keys(), key=_sheet_sort_key):
         current_master = _pick_master(sheet_name)
         df_noheader = sheets_noheader[sheet_name]
 
@@ -226,4 +239,3 @@ def process_workbook(file_bytes: bytes):
 
     pending_text = "\n\n".join(pending_blocks)
     return report_df, pending_text
-
