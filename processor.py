@@ -56,6 +56,14 @@ master_students_11A = [
     "Sofia Liang Wu"
 ]
 
+MASTER_GROUPS = {
+    "7A": master_students_7A,
+    "8G": master_students_8G,
+    "9A": master_students_9A,
+    "10A": master_students_10A,
+    "11A": master_students_11A,
+}
+
 def extraer_nombre(nombre):
     if pd.isna(nombre):
         return ""
@@ -89,7 +97,7 @@ def extraer_nombre(nombre):
     return partes[0]
 
 
-def _pick_master(sheet_name: str):
+def _pick_master_by_sheet_name(sheet_name: str):
     """Selecciona lista maestra según prefijo/código de hoja."""
     if sheet_name.startswith("2526-07") or "MI" in sheet_name:
         return master_students_7A
@@ -99,6 +107,40 @@ def _pick_master(sheet_name: str):
         return master_students_9A
     if sheet_name.startswith("2526-00") or "ML" in sheet_name:
         return master_students_10A
+    return []
+
+
+def _normalize_name(name: str) -> str:
+    return " ".join(str(name).split()).casefold()
+
+
+def _infer_master_from_students(student_names):
+    """
+    Si el nombre de la hoja no coincide con los patrones conocidos,
+    infiere el grupo comparando los nombres del Excel contra las listas maestras.
+    """
+    normalized_students = {_normalize_name(n) for n in student_names if pd.notna(n) and str(n).strip()}
+    if not normalized_students:
+        return []
+
+    best_group = None
+    best_overlap = 0
+    best_ratio = 0.0
+
+    for group_name, master_list in MASTER_GROUPS.items():
+        normalized_master = {_normalize_name(n) for n in master_list}
+        overlap = len(normalized_students & normalized_master)
+        ratio = overlap / len(normalized_master) if normalized_master else 0.0
+
+        if overlap > best_overlap or (overlap == best_overlap and ratio > best_ratio):
+            best_group = group_name
+            best_overlap = overlap
+            best_ratio = ratio
+
+    # Umbral conservador para evitar asignaciones por coincidencia accidental.
+    if best_group and best_overlap >= 3:
+        return MASTER_GROUPS[best_group]
+
     return []
 
 
@@ -127,7 +169,6 @@ def process_workbook(file_bytes: bytes):
     pending_blocks = []
 
     for sheet_name in sorted(sheets_noheader.keys(), key=_sheet_sort_key):
-        current_master = _pick_master(sheet_name)
         df_noheader = sheets_noheader[sheet_name]
 
         # D16 → "# completed" (índices base 0)
@@ -144,6 +185,17 @@ def process_workbook(file_bytes: bytes):
             table.columns = table.columns.astype(str).str.strip()
         except Exception:
             table = pd.DataFrame()
+
+        if not table.empty and "Student Name" in table.columns:
+            student_names = table["Student Name"].dropna().tolist()
+        else:
+            student_names = []
+
+        # 1) Intentar por nombre de hoja conocido.
+        # 2) Si no coincide, inferir por comparación de nombres de estudiantes.
+        current_master = _pick_master_by_sheet_name(sheet_name)
+        if not current_master:
+            current_master = _infer_master_from_students(student_names)
 
         if not table.empty and ("Student Name" in table.columns) and ("Final Score" in table.columns):
             # Final Score a float
