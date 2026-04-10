@@ -48,6 +48,25 @@ master_students_10A = [
     "Yazmin Shen Chen","Zuwei Guo"
 ]
 
+master_students_11A = [
+    "Wilson Chen Zhu","Rocco Lokee Solis","James De Gracia Vega",
+    "Lyannie Chen Liu","Mavielis Castillero Delgado","Jackson Zhu Wu",
+    "Ashly Li Hou","Joel Perez Botello","Wilken Wong Wang",
+    "Michell Qiu Luo","Rafael Romero Burgos","Anny Deng Liu",
+    "Sofia Liang Wu"
+]
+
+master_students_12A = [
+    "Seth Lokee Solis",
+    "Herbert Chen He",
+    "Karina Li Fang",
+    "Evelyn Luo Qiu",
+    "Isabel Qiu Luo",
+    "Xuming Hou Zhang",
+    "Johan Aschao Cardenas",
+    "Edgar Justavino Andrade"
+]
+
 def extraer_nombre(nombre):
     if pd.isna(nombre):
         return ""
