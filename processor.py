@@ -11,7 +11,7 @@ master_students_7A = [
     "Andrea Rodriguez Acevedo","Arantza Navarro Flores","Brandon Chock Kong","Crystal Hou Qiu",
     "Daniel Puga Mora","Diego Pimentel Woodley","Douglas Deweese Alonzo","Dylan Dely Flaautt",
     "Eduardo Gudiño Valdez","Ethan De Leon Raven","Franklin Sanchez Avecilla","Ian Chong Serrano",
-    "Iann Arauz","Inna Diaz Agudo","Joyce Wei Zhang","Kaidy Chong Zhu","Kelly Qiu Luo","Kelly Xu Deng",
+    "Iann Arauz","Inna Diaz Agudo","Joyce Wei Zhang","Kaidy Chong Zhu","Kelly Qiu Luo","Kelly Xu Deng","Kevin Luo Zhang",
     "Kisbeth Chong Qiu","Luzarianis Prado Martinez","Melanie Villalaz Olivardia","Mia Atencio Giron",
     "Nicolas Perez Brown","Sebastian Villasmil Carosi","Siwen Zhang","Sofia Guevara","Sofia Zhu Wu",
     "Vicky Zhu Zhang","Vivian Wen Hou","William Qiu Hou","Zhuoying Qiu"
