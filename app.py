@@ -33,6 +33,56 @@ with st.sidebar:
 
 st.divider()
 
+def render_touch_copy_table(df: pd.DataFrame, *, title: str) -> None:
+    """Render a touch-friendly HTML table so users can long-press and copy values on tablets."""
+    st.markdown(f"**{title}**")
+    if df is None or df.empty:
+        st.info("No hay datos para copiar.")
+        return
+
+    safe_df = df.fillna("").astype(str)
+    html_table = safe_df.to_html(index=False, escape=True)
+
+    st.components.v1.html(
+        f"""
+        <style>
+            .copy-wrap {{
+                border: 1px solid #E5E7EB;
+                border-radius: 8px;
+                max-height: 280px;
+                overflow: auto;
+                -webkit-overflow-scrolling: touch;
+                background: white;
+            }}
+            .copy-wrap table {{
+                border-collapse: collapse;
+                width: 100%;
+                font-size: 14px;
+            }}
+            .copy-wrap th, .copy-wrap td {{
+                border: 1px solid #E5E7EB;
+                padding: 8px;
+                white-space: nowrap;
+                user-select: text;
+                -webkit-user-select: text;
+                -webkit-touch-callout: default;
+            }}
+            .copy-wrap th {{
+                position: sticky;
+                top: 0;
+                background: #F9FAFB;
+                z-index: 1;
+            }}
+        </style>
+        <div class="copy-wrap">{html_table}</div>
+        <p style="margin-top:8px; color:#6B7280; font-size:12px;">
+          En tablet/touchscreen: mantén presionada una celda para seleccionar y copiar texto a Excel.
+        </p>
+        """,
+        height=360,
+        scrolling=True,
+    )
+
 # --- Uploader
 uploaded = st.file_uploader("Arrastra aquí tus archivos .xls / .xlsx", type=["xls", "xlsx"], accept_multiple_files=True)
 
@@ -53,14 +103,7 @@ if uploaded:
             with st.expander(f"📄 Resultado de: {up.name}", expanded=False):
                 if isinstance(report_df, pd.DataFrame) and not report_df.empty:
                     st.dataframe(report_df, use_container_width=True, height=240)
-                    tsv_text = report_df.to_csv(sep="\t", index=False)
-                    st.text_area(
-                        "📋 Copiar todo para Excel (TSV)",
-                        value=tsv_text,
-                        height=180,
-                        help="Selecciona todo y copia este bloque para pegar toda la tabla de una vez en Excel.",
-                        key=f"copy_tsv_{up.name}",
-                    )
+                    render_touch_copy_table(report_df, title="📋 Tabla copiable (touch)")
                     tsv_bytes = report_df.to_csv(sep="\t", index=False).encode("utf-8")
                     st.download_button(
                         "⬇️ Descargar report.tsv",
@@ -103,14 +146,7 @@ if st.session_state.runs > 0:
     # Tabla acumulada
     if not st.session_state.combined_report.empty:
         st.dataframe(st.session_state.combined_report, use_container_width=True, height=260)
-        combined_tsv_text = st.session_state.combined_report.to_csv(sep="\t", index=False)
-        st.text_area(
-            "📋 Copiar acumulado para Excel (TSV)",
-            value=combined_tsv_text,
-            height=220,
-            help="Selecciona todo y copia este bloque para pegar el reporte acumulado completo en Excel.",
-            key="copy_tsv_combined",
-        )
+        render_touch_copy_table(st.session_state.combined_report, title="📋 Tabla acumulada copiable (touch)")
         tsv_bytes = st.session_state.combined_report.to_csv(sep="\t", index=False).encode("utf-8")
         st.download_button("⬇️ Descargar report.tsv (acumulado)", tsv_bytes, file_name="report.tsv", mime="text/tab-separated-values")
     else:
