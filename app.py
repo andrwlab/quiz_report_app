@@ -147,7 +147,7 @@ if uploaded:
             with st.expander(f"📄 Resultado de: {up.name}", expanded=False):
                 if isinstance(report_df, pd.DataFrame) and not report_df.empty:
                     st.dataframe(report_df, use_container_width=True, height=240)
-                    tsv_text = report_df.to_csv(sep="\t", index=False)
+                    tsv_text = report_df.to_csv(sep="\t", index=False, header=False)
                     block_id = f"file_{st.session_state.runs}_{abs(hash(up.name))}"
                     render_copy_to_clipboard_block(
                         tsv_text,
@@ -155,7 +155,6 @@ if uploaded:
                         block_id=block_id,
                         height=180,
                     )
-                    render_touch_copy_table(report_df, title="📋 Tabla copiable (touch)")
                     tsv_bytes = tsv_text.encode("utf-8")
                     st.download_button(
                         "⬇️ Descargar report.tsv",
