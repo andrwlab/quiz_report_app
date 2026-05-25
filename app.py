@@ -167,6 +167,13 @@ if uploaded:
 
                 if pending_text and pending_text.strip():
                     st.text_area("all_pending_low.txt", pending_text, height=220)
+                    block_id = f"pending_{st.session_state.runs}_{abs(hash(up.name))}"
+                    render_copy_to_clipboard_block(
+                        pending_text,
+                        title="📋 Copiar contenido de all_pending_low.txt",
+                        block_id=block_id,
+                        height=220,
+                    )
                     st.download_button(
                         "⬇️ Descargar all_pending_low.txt",
                         data=pending_text.encode("utf-8"),
@@ -216,6 +223,12 @@ if st.session_state.runs > 0:
     if st.session_state.combined_pending_low:
         all_text = "\n\n".join(st.session_state.combined_pending_low)
         st.text_area("all_pending_low.txt (acumulado)", all_text, height=260)
+        render_copy_to_clipboard_block(
+            all_text,
+            title="📋 Copiar all_pending_low.txt (acumulado)",
+            block_id="pending_combined",
+            height=260,
+        )
         st.download_button(
             "⬇️ Descargar all_pending_low.txt (acumulado)",
             data=all_text.encode("utf-8"),
