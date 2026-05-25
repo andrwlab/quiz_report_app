@@ -197,16 +197,12 @@ if st.session_state.runs > 0:
 
     if not st.session_state.combined_report.empty:
         st.dataframe(st.session_state.combined_report, use_container_width=True, height=260)
-        combined_tsv_text = st.session_state.combined_report.to_csv(sep="\t", index=False)
+        combined_tsv_text = st.session_state.combined_report.to_csv(sep="\t", index=False, header=False)
         render_copy_to_clipboard_block(
             combined_tsv_text,
             title="📋 Copiar acumulado para Excel (TSV)",
             block_id="combined",
             height=220,
-        )
-        render_touch_copy_table(
-            st.session_state.combined_report,
-            title="📋 Tabla acumulada copiable (touch)",
         )
         tsv_bytes = combined_tsv_text.encode("utf-8")
         st.download_button(
