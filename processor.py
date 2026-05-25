@@ -91,7 +91,7 @@ master_students_7A = [
     "Iann Arauz","Inna Diaz Agudo","Joyce Wei Zhang","Kaidy Chong Zhu","Kelly Qiu Luo","Kelly Xu Deng","Kevin Luo Zhang",
     "Kisbeth Chong Qiu","Luzarianis Prado Martinez","Melanie Villalaz Olivardia","Mia Atencio Giron",
     "Nicolas Perez Brown","Sebastian Villasmil Carosi","Siwen Zhang","Sofia Guevara","Sofia Zhu Wu",
-    "Vicky Zhu Zhang","Vivian Wen Hou","William Qiu Hou","Zhuoying Qiu"
+    "Vicky Zhu Zhang","Vivian Wen Hou","William Qiu Hou","Zhuoying Qiu","Junke He"
 ]
 
 master_students_8G = [
