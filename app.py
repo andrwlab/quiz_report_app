@@ -53,6 +53,14 @@ if uploaded:
             with st.expander(f"📄 Resultado de: {up.name}", expanded=False):
                 if isinstance(report_df, pd.DataFrame) and not report_df.empty:
                     st.dataframe(report_df, use_container_width=True, height=240)
+                    tsv_text = report_df.to_csv(sep="\t", index=False)
+                    st.text_area(
+                        "📋 Copiar todo para Excel (TSV)",
+                        value=tsv_text,
+                        height=180,
+                        help="Selecciona todo y copia este bloque para pegar toda la tabla de una vez en Excel.",
+                        key=f"copy_tsv_{up.name}",
+                    )
                     tsv_bytes = report_df.to_csv(sep="\t", index=False).encode("utf-8")
                     st.download_button(
                         "⬇️ Descargar report.tsv",
@@ -95,7 +103,15 @@ if st.session_state.runs > 0:
     # Tabla acumulada
     if not st.session_state.combined_report.empty:
         st.dataframe(st.session_state.combined_report, use_container_width=True, height=260)
-        tes = st.session_state.combined_report.to_csv(sep="\t", index=False).encode("utf-8")
+        combined_tsv_text = st.session_state.combined_report.to_csv(sep="\t", index=False)
+        st.text_area(
+            "📋 Copiar acumulado para Excel (TSV)",
+            value=combined_tsv_text,
+            height=220,
+            help="Selecciona todo y copia este bloque para pegar el reporte acumulado completo en Excel.",
+            key="copy_tsv_combined",
+        )
+        tsv_bytes = st.session_state.combined_report.to_csv(sep="\t", index=False).encode("utf-8")
         st.download_button("⬇️ Descargar report.tsv (acumulado)", tsv_bytes, file_name="report.tsv", mime="text/tab-separated-values")
     else:
         st.info("Aún no hay filas en el **report.tsv** acumulado.")
