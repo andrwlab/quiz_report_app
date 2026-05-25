@@ -238,6 +238,32 @@ if st.session_state.runs > 0:
     else:
         st.info("Aún no hay contenido en **all_pending_low.txt** acumulado.")
 
+    if st.session_state.combined_pending_low:
+        st.divider()
+        st.subheader("✉️ Vista previa de correos de infracciones")
+        import processor
+        parsed = processor.parse_pending_low_text("\n\n".join(st.session_state.combined_pending_low))
+        mapped, unmatched = processor.map_students_to_master(parsed)
+        context = st.text_input("Contexto del quiz (subject line)", value="Periodic Quizzes")
+        intro = st.text_area("Intro del correo", value="At the bottom there is a list of students who didn’t finish their assignments for the periodic quizzes and will get an infraction. The due date was given in advance, and the students below still appeared under pending or with a score below 15.1%.")
+        result = processor.build_infraction_emails(mapped, context_label=context, intro_text=intro)
+
+        st.write("**Estudiantes no reconocidos:**")
+        st.write(unmatched if unmatched else "Ninguno ✅")
+
+        for idx, email in enumerate(result["emails"]):
+            st.markdown(f"### Correo {idx+1} — {email['recipientName']}")
+            st.text_input(f"Asunto {idx+1}", value=email["subject"], key=f"subj_{idx}")
+            st.text_area(f"Cuerpo {idx+1}", value=email["body"], height=400, key=f"body_{idx}")
+            col1,col2,col3 = st.columns(3)
+            col1.download_button("Copiar correo", data=(email["subject"]+"\n\n"+email["body"]).encode("utf-8"), file_name=f"email_{idx+1}.txt")
+            col2.download_button("Copiar asunto", data=email["subject"].encode("utf-8"), file_name=f"subject_{idx+1}.txt")
+            col3.download_button("Copiar cuerpo", data=email["body"].encode("utf-8"), file_name=f"body_{idx+1}.txt")
+
+            st.write("Quizzes por salón:")
+            for sec in email["sections"]:
+                st.write(f"- {sec['grade']}: {sec['quizCount']} quiz(es)")
+
 st.divider()
 with st.expander("ℹ️ Cómo adaptar tu lógica existente", expanded=False):
     st.markdown("""
