@@ -146,7 +146,6 @@ if uploaded:
 
             with st.expander(f"📄 Resultado de: {up.name}", expanded=False):
                 if isinstance(report_df, pd.DataFrame) and not report_df.empty:
-                    st.dataframe(report_df, use_container_width=True, height=240)
                     tsv_text = report_df.to_csv(sep="\t", index=False, header=False)
                     block_id = f"file_{st.session_state.runs}_{abs(hash(up.name))}"
                     render_copy_to_clipboard_block(
@@ -202,7 +201,6 @@ if st.session_state.runs > 0:
     st.subheader("📊 Resumen acumulado de la sesión")
 
     if not st.session_state.combined_report.empty:
-        st.dataframe(st.session_state.combined_report, use_container_width=True, height=260)
         combined_tsv_text = st.session_state.combined_report.to_csv(sep="\t", index=False, header=False)
         render_copy_to_clipboard_block(
             combined_tsv_text,
