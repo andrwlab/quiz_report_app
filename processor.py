@@ -200,13 +200,47 @@ def _normalize_name(name: str) -> str:
     return " ".join(str(name).split()).casefold()
 
 
+def _build_name_keys(name: str):
+    """
+    Genera llaves de comparación para un nombre:
+    - nombre completo normalizado
+    - nombre corto (extraer_nombre) normalizado
+    """
+    if pd.isna(name) or not str(name).strip():
+        return set()
+
+    full_key = _normalize_name(name)
+    short_key = _normalize_name(extraer_nombre(name))
+    return {full_key, short_key}
+
+
+def _find_present_master_students(master_list, student_names):
+    """
+    Empareja alumnos presentes en la tabla con la lista maestra, tolerando:
+    - nombre completo vs nombre corto (ej. "Angeline" vs nombre completo)
+    - variaciones de espacios/mayúsculas.
+    """
+    observed_keys = set()
+    for student in student_names:
+        observed_keys.update(_build_name_keys(student))
+
+    present_master = []
+    for master_student in master_list:
+        if _build_name_keys(master_student) & observed_keys:
+            present_master.append(master_student)
+    return present_master
+
+
 def _infer_master_from_students(student_names):
     """
     Si el nombre de la hoja no coincide con los patrones conocidos,
     infiere el grupo comparando los nombres del Excel contra las listas maestras.
     """
-    normalized_students = {_normalize_name(n) for n in student_names if pd.notna(n) and str(n).strip()}
-    if not normalized_students:
+    observed_keys = set()
+    for student in student_names:
+        observed_keys.update(_build_name_keys(student))
+
+    if not observed_keys:
         return []
 
     best_group = None
@@ -214,8 +248,10 @@ def _infer_master_from_students(student_names):
     best_ratio = 0.0
 
     for group_name, master_list in MASTER_GROUPS.items():
-        normalized_master = {_normalize_name(n) for n in master_list}
-        overlap = len(normalized_students & normalized_master)
+        normalized_master = set()
+        for master_student in master_list:
+            normalized_master.update(_build_name_keys(master_student))
+        overlap = len(observed_keys & normalized_master)
         ratio = overlap / len(normalized_master) if normalized_master else 0.0
 
         if overlap > best_overlap or (overlap == best_overlap and ratio > best_ratio):
@@ -307,11 +343,11 @@ def process_workbook(file_bytes: bytes):
             avg_score_str = f"{promedio:.1f}%"
 
             # Pending: en master pero no aparecen en la tabla
-            present_students = [
-                st for st in table["Student Name"].dropna().unique().tolist()
-                if st in current_master
-            ]
-            missing_students = [st for st in current_master if st not in present_students]
+            present_students = _find_present_master_students(
+                current_master,
+                table["Student Name"].dropna().unique().tolist()
+            )
+            missing_students = [st for st in current_master if st not in set(present_students)]
             missing_display = [extraer_nombre(st) for st in missing_students]
 
             pending_str = ", ".join(missing_display) if missing_display else ""
