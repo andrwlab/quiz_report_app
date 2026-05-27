@@ -34,8 +34,15 @@ with st.sidebar:
 st.divider()
 
 
-def render_copy_to_clipboard_block(tsv_text: str, *, title: str, block_id: str, height: int = 220) -> None:
+def _dynamic_textarea_height(text: str, *, min_height: int = 140, max_height: int = 520, line_px: int = 24) -> int:
+    """Estimate a textarea height based on number of text lines."""
+    line_count = max(1, text.count("\n") + 1)
+    return max(min_height, min(max_height, line_count * line_px))
+
+
+def render_copy_to_clipboard_block(tsv_text: str, *, title: str, block_id: str, height: int | None = None) -> None:
     """Render a client-side copy-to-clipboard block for touch devices."""
+    resolved_height = height or _dynamic_textarea_height(tsv_text)
     safe_text = tsv_text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
     st.markdown(f"**{title}**")
@@ -52,7 +59,7 @@ def render_copy_to_clipboard_block(tsv_text: str, *, title: str, block_id: str, 
         <textarea
           id="tsv_{block_id}"
           readonly
-          style="width:100%; height:{height}px; padding:8px; border:1px solid #D1D5DB; border-radius:6px; font-family:monospace; font-size:12px; white-space:pre;"
+          style="width:100%; height:{resolved_height}px; padding:8px; border:1px solid #D1D5DB; border-radius:6px; font-family:monospace; font-size:12px; white-space:pre;"
         >{safe_text}</textarea>
         <script>
           async function copyTSV_{block_id}() {{
@@ -69,7 +76,7 @@ def render_copy_to_clipboard_block(tsv_text: str, *, title: str, block_id: str, 
           }}
         </script>
         """,
-        height=height + 70,
+        height=resolved_height + 70,
         scrolling=False,
     )
 
