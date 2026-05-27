@@ -371,8 +371,6 @@ def process_workbook(file_bytes: bytes):
 
             # === Bloque para all_pending_low.txt (nombres completos y con % cuando aplica) ===
             block_lines = []
-            block_lines.append(f"Quiz: {quiz_code}\n")
-
             # Pending
             block_lines.append("Pending:\n")
             for st in missing_students:
@@ -405,7 +403,7 @@ def process_workbook(file_bytes: bytes):
                 "low_names": ""        
             })
             pending_blocks.append(
-                f"Quiz: {sheet_name}\nPending:\n\nLow Score (< 15.1%):\n\nLow Score (15.1% - 74.9%):\n\n{'_'*44}\n"
+                f"Pending:\n\nLow Score (< 15.1%):\n\nLow Score (15.1% - 74.9%):\n\n{'_'*44}\n"
             )
 
         # --- construir DataFrame y ordenar columnas ---
