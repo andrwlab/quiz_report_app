@@ -172,7 +172,6 @@ if uploaded:
                     st.info("No se generó contenido para **report.tsv**")
 
                 if pending_text and pending_text.strip():
-                    st.text_area("all_pending_low.txt", pending_text, height=220)
                     block_id = f"pending_{st.session_state.runs}_{abs(hash(up.name))}"
                     render_copy_to_clipboard_block(
                         pending_text,
@@ -227,7 +226,6 @@ if st.session_state.runs > 0:
 
     if st.session_state.combined_pending_low:
         all_text = "\n\n".join(st.session_state.combined_pending_low)
-        st.text_area("all_pending_low.txt (acumulado)", all_text, height=260)
         render_copy_to_clipboard_block(
             all_text,
             title="📋 Copiar all_pending_low.txt (acumulado)",
