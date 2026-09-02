@@ -6,7 +6,7 @@
 import io
 import pandas as pd
 
-# ====== TUS LISTAS MAESTRAS ======
+# ====== LISTAS MAESTRAS ======
 
 master_students_2A = [
     "Ayaan Ahir","Jean Paolo Atencio Mejias","Sophie Marie Bernal Ruiz","Idelfonso Bracho","Gia Broce",
@@ -85,52 +85,63 @@ master_students_6B = [
 ]
 
 master_students_7A = [
-    "Andrea Rodriguez Acevedo","Arantza Navarro Flores","Brandon Chock Kong","Crystal Hou Qiu",
-    "Daniel Puga Mora","Diego Pimentel Woodley","Douglas Deweese Alonzo","Dylan Dely Flaautt",
-    "Eduardo Gudiño Valdez","Ethan De Leon Raven","Franklin Sanchez Avecilla","Ian Chong Serrano",
-    "Iann Arauz","Inna Diaz Agudo","Joyce Wei Zhang","Kaidy Chong Zhu","Kelly Qiu Luo","Kelly Xu Deng","Kevin Luo Zhang",
-    "Kisbeth Chong Qiu","Luzarianis Prado Martinez","Melanie Villalaz Olivardia","Mia Atencio Giron",
-    "Nicolas Perez Brown","Sebastian Villasmil Carosi","Siwen Zhang","Sofia Guevara","Sofia Zhu Wu",
-    "Vicky Zhu Zhang","Vivian Wen Hou","William Qiu Hou","Zhuoying Qiu","Junke He"
+    "Henrique Arenas", "Angeline Victoria Cepeda Shiu", "Edwin Chen", "Hiram Antony Chen He",
+    "Valeria Sophia Chen De Leon", "Daniel Jesus De Leon Caceres", "Alexia Isabel Diaz Herrera",
+    "Hector Fu Chen", "Josahir Darshan Garcia Cubilla", "Jaime Javier Gibbs Guerra",
+    "Gabriela Marie Guerra Lezcano", "Andrew David Guo Yau", "Junke He", "Daisy Jiang Wen",
+    "Maribel Pei Lin Lai Zhong", "Khloe Isabelle Lau Rodriguez", "Emily Li", "Jimmie Liu Wu",
+    "Paola Luo Qiu", "Carolina Hiriam Luo Luo", "Jia Ying Luo", "Kaleth Montalvo",
+    "Maria Jose Pardo Caceres", "Penelope Perez Arauz", "Jose Felix Pimentel Woodley",
+    "Allison Nicole Plicet De Gracia", "Camila Qiu", "Lia Roxette Robinson Arias",
+    "Adriam Jose Rodriguez Luna", "Valentina Isabella Velarde Herrera", "Angelie Sophia Wu Liu",
+    "Evelyn Yang", "Lucia Zhang Zhong"
 ]
 
 master_students_8G = [
-    "Alexis Xu Wu","Andy Zhang Qiu","Antonella Jaen Lombardo","Anyoli Melo Cordoba","Christopher Wen Wen",
-    "Dhruvin Ahir Ahir","Dominique Kreuzwirth Linares","Ellis He Cai","Heiley Qiu How","Hector Chen Wu",
-    "Hilary Hou Qiu","Ian Navarro Garcia","Iria Luo Zhong","Ivery Wong Wang","Johan Ching Bernal",
-    "John Li Hou","Jorge Hou Zhang","Jose Rodriguez Vega","Juan De Leon Caceres","Judith He Luo",
-    "Kevin Liu Wu","Lady Ruiz Gonzalez","Maria Lourdes Sugasti Ledezma","Mario Zhong Huang",
-    "Matias De Leon Caceres","Mateo Montero Cano","Meidy Sem Cheng","Rian Ahir Ahir","Ryan Melendez Smith",
-    "Samantha Valero Bracamonte","Sara Morales Aguilera","Sarah Aguilar Espinosa","Sophia Rodriguez Valenzuela",
-    "Steven Lai Zhong","Victoria Pérez Garcia","Williams Luo Qiu","Williams Luo Yang","Ximena Ramos Wilches",
-    "Yesenia Li Qiu", "Zahid Amor Ladron De Guevara"
+    "Iann Arauz", "Mia Atencio Giron", "Brandon Chock Kong", "Kaidy Chong Zhu",
+    "Ian Chong Serrano", "Kisbeth Chong Qiu", "Ethan De Leon Raven", "Dylan Dely Flaautt",
+    "Douglas Deweese Alonzo", "Inna Diaz Agudo", "Eduardo Gudiño Valdez", "Sofia Guevara",
+    "Crystal Hou Qiu", "Kevin Luo Zhang", "Arantza Navarro Flores", "Nicolas Perez Brown",
+    "Diego Pimentel Woodley", "Luzarianis Prado Martinez", "Daniel Puga Mora", "William Qiu Hou",
+    "Kelly Qiu Luo", "Andrea Rodriguez Acevedo", "Franklin Sanchez Avecilla",
+    "Melanie Villalaz Olivardia", "Sebastian Villasmil Carosi", "Joyce Wei Zhang",
+    "Vivian Wen Hou", "Siwen Zhang", "Sofia Zhu Wu", "Vicky Zhu Zhang"
 ]
 
 master_students_9A = [
-    "Adrian Fernandez","Allison Chock Kong","Analia Gomez","Angela Li Fang","Andres Lan Lan",
-    "Antonio Zhu Zhang","Brian Chen Wen","Carlos Luo Luo","David Li Hou","Dylan Rodriguez Delgado",
-    "Dylan Sanjur Navarro","Gabriel Sanchez Serrano","Guohong Xu","Ian Espino Almanza",
-    "Isabella Cordero Solano","Jose Bertorelli Fernandez","Jorge He Luo",
-    "Juan Bonilla Llanos","Justyn Wei Zhang","Karina Luo Luo","Kenny Qiu Zhu","Kevin Wen Zhang",
-    "Kristal Cordoba Gooden","Leah Navarro","Luciana Ruiz Riveros","Paola Teng Arauz","Ray Cheung Luo",
-    "Winston Chen Zhu","Yoselin Shen Chen","Zhiye Chen Li"
+    "Sarah Aguilar Espinosa", "Dhruvin Ahir Ahir", "Hector Chen Wu", "Matias De Leon Caceres",
+    "Judith He Luo", "Jorge Hou Zhang", "Antonella Jaen Lombardo", "Dominique Kreuzwirth Linares",
+    "John Li Hou", "Ryan Melendez Smith", "Anyoli Melo Cordoba", "Sara Morales Aguilera",
+    "Ximena Ramos Wilches", "Jose Rodriguez Vega", "Lady Ruiz Gonzalez", "Heiley Qiu How",
+    "Meidy Sem Cheng", "Maria Lourdes Sugasti Ledezma", "Alexis Xu Wu", "Rian Ahir Ahir",
+    "Johan Ching Bernal", "Juan De Leon Caceres", "Ellis He Cai", "Hilary Hou Qiu",
+    "Steven Lai Zhong", "Yesenia Li Qiu", "Kevin Liu Wu", "William Luo Qiu", "Williams Luo Yang",
+    "Iria Luo Zhong", "Mateo Montero Cano", "Victoria Pérez Garcia", "Sophia Rodriguez Valenzuela",
+    "Samantha Valero Bracamonte", "Christopher Wen Wen", "Ivery Wong Wang", "Mario Zhong Huang"
 ]
 
 master_students_10A = [
-    "Angui Zhang Qiu","Anyi Zhang Zhong","Camila Gonzalez Lopez",
-    "Danny Tang Zhong","Edwuar Qiu Wu","Gabriel Chen De Leon","Heidi Sem Cheng","Helen Fu Chen",
-    "Jason Wen Hou","Jassek Cajar Muñoz","Jeniffer He Wen","Joanny Hou Zhang","Kelly Nie Nie",
-    "Lauren Tapia Frias","Lucas Wu Luo","Mariangel Castro Ortega","Marcos Luo Zhong",
-    "Miguel Concepcion Morales","Nishtha Ahir","Patricia Fu Chen","Sofia Ferrer Parra",
-    "Yazmin Shen Chen","Zuwei Guo"
+    "Jose Bertorelli Fernandez", "Juan Bonilla Llanos", "Kenneth Chan", "Brian Chen Wen",
+    "Winston Chen Zhu", "Zhiye Chen Li", "Ray Cheung Luo", "Allison Chock Kong",
+    "Isabella Cordero Solano", "Kristal Cordoba Gooden", "Ian Espino Almanza", "Adrian Fernandez",
+    "Jorge He Luo", "Andres Lan Lan", "Angela Li Fang", "David Li Hou", "Carlos Luo Luo",
+    "Karina Luo Luo", "Leah Navarro", "Kenny Qiu Zhu", "Dylan Rodriguez Delgado",
+    "Luciana Ruiz Riveros", "Dylan Sanjur Navarro", "Yoselin Shen Chen", "Paola Teng Arauz",
+    "Justyn Wei Zhang", "Johnny Yang", "Antonio Zhu Zhang"
 ]
 
 master_students_11A = [
-    "Wilson Chen Zhu","Rocco Lokee Solis","James De Gracia Vega",
-    "Lyannie Chen Liu","Mavielis Castillero Delgado","Jackson Zhu Wu",
-    "Ashly Li Hou","Joel Perez Botello","Wilken Wong Wang",
-    "Michell Qiu Luo","Rafael Romero Burgos","Anny Deng Liu",
-    "Sofia Liang Wu"
+    "Jassek Cajar Muñoz", "Mariangel Castro Ortega", "Gabriel Chen De Leon",
+    "Miguel Concepcion Morales", "Sofia Ferrer Parra", "Helena Fu Chen", "Patricia Fu Chen",
+    "Camila Gonzalez Lopez", "Zuwei Guo", "Jennifer He Wen", "Joanny Hou Zhang", "Lucas Wu Luo",
+    "Kelly Nie Nie", "Edwuar Qiu Wu", "Heidi Sem Cheng", "Yazmin Shen Chen", "Danny Tang Zhong",
+    "Lauren Tapia Frias", "Jason Wen Hou", "Anyi Zhang Zhong"
+]
+
+master_students_12A = [
+    "Mavielis Castillero Delgado", "Lyannie Chen Liu", "Wilson Chen Zhu", "James De Gracia Vega",
+    "Anny Deng Liu", "Ashley Li Hou", "Sofia Liang Wu", "Rocco Lokee Solis", "Joel Perez Botello",
+    "Michelle Qiu Luo", "Rafael Romero Burgos", "Wilken Wong Wang", "Jackson Zhu Wu"
 ]
 
 MASTER_GROUPS = {
@@ -148,6 +159,7 @@ MASTER_GROUPS = {
     "9A": master_students_9A,
     "10A": master_students_10A,
     "11A": master_students_11A,
+    "12A": master_students_12A,
 }
 
 def extraer_nombre(nombre):
@@ -184,15 +196,34 @@ def extraer_nombre(nombre):
 
 
 def _pick_master_by_sheet_name(sheet_name: str):
-    """Selecciona lista maestra según prefijo/código de hoja."""
-    if sheet_name.startswith("2526-07") or "MI" in sheet_name:
-        return master_students_7A
-    if sheet_name.startswith("2526-08") or "MJ" in sheet_name:
-        return master_students_8G
-    if sheet_name.startswith("2526-09") or "MK" in sheet_name:
-        return master_students_9A
-    if sheet_name.startswith("2526-00") or "ML" in sheet_name:
+    """Selecciona la lista maestra AY2627 según grado o código de clase."""
+    masters_by_grade = {
+        "07": master_students_7A,
+        "08": master_students_8G,
+        "09": master_students_9A,
+        "10": master_students_10A,
+        "11": master_students_11A,
+        "12": master_students_12A,
+    }
+    class_codes = {
+        "MI": master_students_7A,
+        "MJ": master_students_8G,
+        "MK": master_students_9A,
+        "ML": master_students_10A,
+        "MM": master_students_11A,
+        "MN": master_students_12A,
+    }
+
+    normalized_name = str(sheet_name).upper()
+    # Algunos reportes de décimo han usado "00" en vez de "10".
+    if normalized_name.startswith("2627-00"):
         return master_students_10A
+    for grade, master in masters_by_grade.items():
+        if normalized_name.startswith(f"2627-{grade}"):
+            return master
+    for code, master in class_codes.items():
+        if code in normalized_name:
+            return master
     return []
 
 
@@ -267,16 +298,20 @@ def _infer_master_from_students(student_names):
 
 
 def _sheet_sort_key(sheet_name: str):
-    """Ordena hojas por grado y deja 10A al final."""
-    if sheet_name.startswith("2526-07") or "MI" in sheet_name:
-        return (0, sheet_name)
-    if sheet_name.startswith("2526-08") or "MJ" in sheet_name:
-        return (1, sheet_name)
-    if sheet_name.startswith("2526-09") or "MK" in sheet_name:
-        return (2, sheet_name)
-    if sheet_name.startswith("2526-00") or "ML" in sheet_name:
-        return (4, sheet_name)
-    return (3, sheet_name)
+    """Ordena las hojas AY2627 de séptimo a duodécimo grado."""
+    normalized_name = str(sheet_name).upper()
+    grade_markers = [
+        (("2627-07", "MI"), 0),
+        (("2627-08", "MJ"), 1),
+        (("2627-09", "MK"), 2),
+        (("2627-10", "2627-00", "ML"), 3),
+        (("2627-11", "MM"), 4),
+        (("2627-12", "MN"), 5),
+    ]
+    for markers, order in grade_markers:
+        if any(marker in normalized_name for marker in markers):
+            return (order, normalized_name)
+    return (6, normalized_name)
 
 
 def process_workbook(file_bytes: bytes):
