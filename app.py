@@ -140,7 +140,13 @@ uploaded = st.file_uploader(
 )
 
 if uploaded:
+    import importlib
     import processor  # Tu lógica vive aquí
+
+    # Streamlit conserva los módulos importados mientras el proceso sigue vivo.
+    # Recargar garantiza que una actualización de las listas maestras se aplique
+    # sin tener que reiniciar manualmente toda la aplicación.
+    processor = importlib.reload(processor)
 
     for up in uploaded:
         with st.spinner(f"Procesando: {up.name}"):
