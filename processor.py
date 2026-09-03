@@ -4,84 +4,88 @@
 #   2) pending_text (para mostrar/descargar all_pending_low.txt)
 
 import io
+import unicodedata
 import pandas as pd
 
 # ====== LISTAS MAESTRAS ======
 
 master_students_2A = [
-    "Ayaan Ahir","Jean Paolo Atencio Mejias","Sophie Marie Bernal Ruiz","Idelfonso Bracho","Gia Broce",
-    "Maria Valentina Cardenas","Alanna Gibell Castillo Jean-Louis","Gian Felipe Chapman Rodríguez","Rosmira Chavez",
-    "Axl Chirinos","Daniel Espinoza Rueda","Arianna Ferrer","Isabella Flaautt","Dana Gomez","Kemuel Guardia",
-    "Sofía He Liu","Olivia Law Shiu","Sara Luo","Ana Victoria Marquez Onodera","Luis Mendoza","Louis Rubin",
-    "Alexander Solis Salomon","Lakdar Terreros Acuña","Eren Devin Yau Su","Daniela Zhang Fan","Erick Zhong Hou"
+    "Ethan Blake", "Mishva Ahir", "Liz Victoria Alonso", "Avyana Betancourt", "Jimena Crespo",
+    "Diego Espinoza", "Sophia Gaspard", "Ziad Gaviria", "Alexa Jiang", "Lucas Lam", "Lia Laniado",
+    "Edwin Lin", "Dominic Mcgee", "Caleb Ng", "Luna Nuñez", "Ilhem Ortiz", "Isis Rivera",
+    "Nohellys Rodriguez", "Mia Sarmiento", "Emma Valdes", "Lucas Watler", "Danny Wen", "Dylan Zou"
 ]
 
 master_students_2B = [
-    "Yaksh Ahir","Bayazid Amor","Brianna Arauz","Angel Chacon","Chloe Cheng Cham","Dereck David Chu Zhong",
-    "Alida Duarte Castro","Hilary Feng Zhong","Keyden Gonzalez","Axl Lin","Tiffany Liu","Javier Zaid Ortiz",
-    "Emily Osorio Gonzalez","Isaac Pinillo","Felicia Qiu Huang","Luca Rafael Romero Puig","Alana Solis Salomon",
-    "Jeremy Thoubourne","Marcelo Vergara","Dereck Vigil Aguilar","Myka Weets","Sofia Wei Zhang",
-    "Sebástian Wong Cheung","Eiji Yoshioka","Chloe Zhang Chung","Alberto Zhang Fan","Javier Zheng"
+    "Alessandra Calvo", "Ian Cerrud", "Tiffany Chong", "Alejandro Contreras", "Ian Gonzalez",
+    "Mei Gonzalez", "Analia Jimenez", "Nicolas Lasso", "Nicolas Latorraca", "Ical Nuñez",
+    "Eliannah Peralta", "Amelia Quezada", "Gael Quintero", "Liam Rodriguez", "Isabella Sanchez",
+    "Sebastian Sarmiento", "Ezra Schloss", "Kamila Sosa", "Scotty Villasanta", "Abby Wen",
+    "Jennifer Zheng", "Arthur Zhong"
 ]
 
 master_students_3A = [
-    "Humberto Amores","Victoria Campos","Kevin Joel Chen Liu","Daniel Chen Wong","Guillermo Chen",
-    "Jay Jackson Cheung","Hamet Perez Christie","Tania Isabel He Chen","Carlos Hou Zhang Xu Xuan",
-    "Daniel Lambis Burgos","Angeline Alejandra Lizondro Bello","Jennifer Ainhoa Lopez Silva","Jennyfer Luo Luo",
-    "Ana Sofia Luo Zhang","Tom Luo","Paulina Moreno","Eugene Abdel Pinto Navarro","Mateo Ricord",
-    "Diago Rodríguez Delgado","Axel Javier Sinisterra Quintero","Aiden Wen Luo","Terry Wong","Kaylie Wu Liu",
-    "Kenji Yoshioka","Kevin Zhang Luo","Angela Zhang Zhong","Evanys Zheng"
+    "Yaksh Ahir", "Idelfonso Bracho", "Gia Broce", "Maria Valentina Cardenas",
+    "Alanna Gibell Castillo Jean-Louis", "Alida Duarte Castro", "Hilary Feng Zhong", "Danna Gomez",
+    "Sofía He Liu", "Olivia Law Shiu", "Sara Luo", "Ana Victoria Marquez Onodera", "Luis Mendoza",
+    "Luca Rafael Romero Puig", "Alexander Solis Salomon", "Jeremy Thobourne", "Sofia Wei Zhang",
+    "Eren Devin Yau Su", "Eiji Yoshioka", "Alberto Zhang Fan", "Daniela Zhang Fan", "William Zhang",
+    "Javier Zheng", "Erick Zhong Hou"
 ]
 
 master_students_3B = [
-    "Vihanna Tushar Ahir Ahir","Mia Alvarado","Andreh Arana Cano","Noah Nelson Ardines Ortega","David Atencio",
-    "Jasbir Batista","Kerem Jearim Campo De Gracia","Daniel Cepeda Shiu","Thiago Ching",
-    "Daniela Alejandra Espinoza Rueda","Alejandro Gael Garza Fu","Mia Victoria Gonzalez Zurita",
-    "Christian Guerra Lezcano","Lucia Gutierrez Monroy","Eythan Hernandez Arrocha","John Local Solís",
-    "Jennifer Ivonne Loo Yau","Amelie Lucia Luo Lo","Alejandro Marin","Farah Ponton","Arturo Velarde Herrera",
-    "Samantha Velasquez Cordoba","Christopher Visuetty Singh","Azaid Antonio Wang"
+    "Bayazid Amor", "Jean Paolo Atencio Mejias", "Sophie Marie Bernal Ruiz", "Angel Chacon",
+    "Rosmira Chavez", "Chloe Cheng Cham", "Axl Chirinos", "Dereck David Chu Zhong",
+    "Daniel Espinoza Rueda", "Arianna Ferrer", "Isabella Flaautt", "Axl Lin", "Tiffany Liu",
+    "Javier Zaid Ortiz", "Emily Osorio Gonzalez", "Isaac Pinillo", "Felicia Qiu Huang", "Louis Rubin",
+    "Alana Solis Salomon", "Marcelo Vergara", "Dereck Vigil Aguilar", "Myka Weets", "Chloe Zhang Chung"
 ]
 
 master_students_4A = [
-    "Vishva Ahir Ahir","Alessandro Benitez","Pandora Betancourt","Ilhan Ernesto Calvo González","Zhen (Joe) Chen",
-    "Jose Cheng Chong","Aimee Ching","Kurt Chong","Amelia Córdoba Montezuma","Matthew Andrés De León Raven",
-    "Sadith Domínguez","Monica Feng Zhong","Emmanuel Gao","Miah Valentina Gomez","Lyanne Christine Guo Yau",
-    "Emily Luo Luo","Valeria Isabella Marulanda","Hellen Montenegro","Damon Ng","Priscila Olivardia Valdes",
-    "Willy Bryant Qiu Jiang","Alejandro Fabian Sanchez Rodriguez","Cecilia Tang","Victoria Teran","Mía Wong Cheung"
+    "Humberto Amores", "Mia Alvarado", "Victoria Campos", "Kevin Joel Chen Liu", "Daniel Chen Wong",
+    "Guillermo Chen", "Jay Cheung", "Tania Isabel He Chen", "Carlos Hou Zhang Xu Xuan",
+    "Angeline Alejandra Lizondro Bello", "Jennifer Ainhoa Lopez Silva", "Jennyfer Luo Luo",
+    "Ana Sofia Luo Zhang", "Tom Luo", "Hamet Perez Christie", "Eugene Abdel Pinto Navarro", "Mateo Ricord",
+    "Diago Rodríguez Delgado", "Axel Javier Sinisterra Quintero", "Kaylie Wu Liu", "Kenji Yoshioka",
+    "Kevin Zhang Luo", "Angela Zhang Zhong", "Evanys Zheng"
 ]
 
 master_students_4B = [
-    "Noelia Raquel Ardines Ortega","Valentina Benites","Geovanna Castillero Castro","Ricardo Isaac Chapman Rodríguez",
-    "Juan David Chavez Prado","Alex Cheung","Athan Chichaco","Luna Ching","Kenneth Chong","Iris Chung Li",
-    "Sofia Alejandra Cortez Del Cid","Leonor Domínguez","Daniel Gibbs","Jade He","Analia Herrera",
-    "Vivian Stephanie Ho Zeng","Alessa Braja Jaén","Eduardo Jiménez Manoleskos","Melody Liu Wu",
-    "Ricardo Lin Luo Qiu Luo","Daryelis Rodriguez","Mia Valeria Romero Puig","Dubraska Sarmiento Suárez",
-    "Fabian Torres Reyna","Kamila Nazareth Vergara","Sofía Cindy Zhang Fan"
+    "Vihanna Tushar Ahir Ahir", "Andreh Arana Cano", "Noah Nelson Ardines Ortega", "David Atencio",
+    "Jasbir Batista", "Keren Jearim Campo De Gracia", "Daniel Cepeda Shiu", "Thiago Ching",
+    "Daniela Alejandra Espinoza Rueda", "Alejandro Gael Garza Fu", "Mia Victoria Gonzalez Zurita",
+    "Christian Guerra Lezcano", "Lucia Gutierrez Monroy", "Eythan Hernandez Arrocha", "John Local Solís",
+    "Jennifer Ivonne Loo Yau", "Amelie Lucia Luo Lo", "Paulina Moreno", "Farah Ponton",
+    "Arturo Velarde Herrera", "Samantha Velasquez Cordoba", "Azaid Antonio Wang", "Aiden Wen Luo"
 ]
 
 master_students_5A = [
-    "Nahikary Amor","Samuel Roberto Ayala Macias","Paul Andrés Castillero Delgado","Thiago Castro",
-    "Emily Catherine Chen He","Kenneth Fu Chen","Francisco Gurdián","Nicole He Gan","Jimmy Hummer He","Kimi He",
-    "Gian Luca Laniado Vega","Alicia Luo Luo","Valeria Montenegro Soto","Valentina Sofía Muñoz Díaz",
-    "Felipe Olivardia","Emma Oro","Hannah Peralta","Valentina Marie Rivera Celis","Andres Rodriguez","Hazel Rodriguez",
-    "Sebastian Ruiz","Lyan Alexander Sánchez Del Río","Isabella Nicole Schloss Herrera","Roberto Tan",
-    "Sofia Visuetty Singh","Eleine Michelle Yau Su","Lucas Young Obando","Daniel Zhang Fan","Steven Zhang Luo",
-    "William Antonio Zhong Huang"
+    "Alessandro Benitez", "Pandora Betancourt", "Ilhan Ernesto Calvo González", "Zhen (Joe) Chen",
+    "Jose Cheng Chong", "Alex Cheung", "Athan Chichaco", "Kurt Chong", "Iris Chung Li",
+    "Amelia Córdoba Montezuma", "Matthew Andrés De León Raven", "Sadith Domínguez", "Monica Feng Zhong",
+    "Emmanuel Gao", "Miah Valentina Gomez", "Sebastian Gomez", "Jade He", "Valeria Isabella Marulanda",
+    "Hellen Montenegro", "Damon Ng", "Priscila Olivardia Valdes", "Alejandro Fabian Sanchez Rodriguez",
+    "Victoria Teran", "Sofía Cindy Zhang Fan"
+]
+
+master_students_5B = [
+    "Noelia Raquel Ardines Ortega", "Valentina Benites", "Geovanna Castillero Castro",
+    "Juan David Chavez Prado", "Aimee Ching", "Luna Ching", "Kenneth Chong",
+    "Sofia Alejandra Cortez Del Cid", "Leonor Domínguez", "Daniel Gibbs", "Lyanne Christine Guo Yau",
+    "Analia Herrera", "Vivian Stephanie Ho Zeng", "Alessa Braja Jaén", "Eduardo Jiménez Manoleskos",
+    "Melody Liu Wu", "Emily Luo Luo", "Daryelis Rodriguez", "Mia Valeria Romero Puig",
+    "Dubraska Sarmiento Suárez", "Cecilia Tang", "Fabian Torres Reyna", "Kamila Nazareth Vergara"
 ]
 
 master_students_6A = [
-    "Akari Carrera Barber","Angeline Victoria Cepeda Shiu","Valeria Sophia Chen De Leon","Hiram Antony Chen He",
-    "Edwin Chen","Gabriela Marie Guerra Lezcano","Daisy Jiang Wen","Maribel Pei Lin Lai Zhong","Jimmie Liu Wu",
-    "Jia Ying Luo","Allison Nicole Plicet De Gracia","Ashley Qiu Jiang","Camila Qiu","Lia Roxette Robinson Arias",
-    "Adriam Jose Rodriguez Luna","Valentina Isabella Velarde Herrera","Evelyn Yang","Juke He"
-]
-
-master_students_6B = [
-    "Henrique Arenas","Daniel Jesus De Leon Caceres","Alexia Isabel Diaz Herrera","Hector Fu Chen",
-    "Josahir Darshan Garcia Cubilla","Jaime Javier Gibbs Guerra","Andrew David Guo Yau",
-    "Alessandra Daniela Lambis Burgos","Khloe Isabelle Lau Rodriguez","Carolina Hiriam Luo Luo","Paola Luo Qiu",
-    "Kaleeth Montalvo","Maria Jose Pardo Caceres","Penelope Perez Arauz","Jose Felix Pimentel Woodley",
-    "Angelie Sophia Wu Liu","Elizabeth Xu","Lucia Zhang Zhong"
+    "Samuel Roberto Ayala Macias", "Skylar Bailey", "Paul Andrés Castillero Delgado",
+    "Emily Catherine Chen He", "Kenneth Fu Chen", "Francisco Gurdián", "Nicole He Gan",
+    "Jimmy Hummer He", "Kimi He", "Mina He", "Gian Luca Laniado Vega", "Alicia Luo Luo",
+    "Valeria Montenegro Soto", "Valentina Sofía Muñoz Díaz", "Felipe Olivardia", "Emma Oro",
+    "Hannah Peralta", "Valentina Marie Rivera Celis", "Andres Rodriguez", "Hazel Rodriguez",
+    "Sebastian Ruiz", "Lyan Alexander Sánchez Del Río", "Isabella Nicole Schloss Herrera", "Roberto Tan",
+    "Eleine Michelle Yau Su", "Lucas Young Obando", "Daniel Zhang Fan", "Steven Zhang Luo",
+    "William Antonio Zhong Huang"
 ]
 
 master_students_7A = [
@@ -152,8 +156,15 @@ MASTER_GROUPS = {
     "4A": master_students_4A,
     "4B": master_students_4B,
     "5A": master_students_5A,
+    "5B": master_students_5B,
     "6A": master_students_6A,
-    "6B": master_students_6B,
+    # Las listas combinadas permiten reconocer reportes que incluyen ambas
+    # secciones; si el reporte contiene solo una, la razón de coincidencia
+    # favorece automáticamente a la sección individual.
+    "2": master_students_2A + master_students_2B,
+    "3": master_students_3A + master_students_3B,
+    "4": master_students_4A + master_students_4B,
+    "5": master_students_5A + master_students_5B,
     "7A": master_students_7A,
     "8G": master_students_8G,
     "9A": master_students_9A,
@@ -228,7 +239,11 @@ def _pick_master_by_sheet_name(sheet_name: str):
 
 
 def _normalize_name(name: str) -> str:
-    return " ".join(str(name).split()).casefold()
+    normalized = " ".join(str(name).split()).casefold()
+    return "".join(
+        char for char in unicodedata.normalize("NFKD", normalized)
+        if not unicodedata.combining(char)
+    )
 
 
 def _build_name_keys(name: str):
