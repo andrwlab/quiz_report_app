@@ -119,7 +119,7 @@ master_students_9A = [
     "Ximena Ramos Wilches", "Jose Rodriguez Vega", "Lady Ruiz Gonzalez", "Heiley Qiu How",
     "Meidy Sem Cheng", "Maria Lourdes Sugasti Ledezma", "Alexis Xu Wu", "Rian Ahir Ahir",
     "Johan Ching Bernal", "Juan De Leon Caceres", "Ellis He Cai", "Hilary Hou Qiu",
-    "Steven Lai Zhong", "Yesenia Li Qiu", "Kevin Liu Wu", "William Luo Qiu", "Williams Luo Yang",
+    "Steven Lai Zhong", "Yesenia Li Qiu", "Kevin Liu Wu", "Williams Luo Qiu", "Williams Luo Yang",
     "Iria Luo Zhong", "Mateo Montero Cano", "Victoria Pérez Garcia", "Sophia Rodriguez Valenzuela",
     "Samantha Valero Bracamonte", "Christopher Wen Wen", "Ivery Wong Wang", "Mario Zhong Huang"
 ]
