@@ -98,7 +98,7 @@ master_students_7A = [
     "Maria Jose Pardo Caceres", "Penelope Perez Arauz", "Jose Felix Pimentel Woodley",
     "Allison Nicole Plicet De Gracia", "Camila Qiu", "Lia Roxette Robinson Arias",
     "Adriam Jose Rodriguez Luna", "Valentina Isabella Velarde Herrera", "Angelie Sophia Wu Liu",
-    "Evelyn Yang", "Lucia Zhang Zhong"
+    "Evelyn Yang", "Lucia Zhang Zhong", "Lucas Spencer Duran"
 ]
 
 master_students_8G = [
