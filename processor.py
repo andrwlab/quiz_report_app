@@ -381,6 +381,22 @@ def _primary_display_name(name: str) -> str:
     return f"{parts[0]} {parts[-1][0]}."
 
 
+def _student_belongs_to_master(student, master_list) -> bool:
+    """Ubica un alumno en una sección sin confundir nombres repetidos."""
+    student_key = _normalize_name(student)
+    full_match = any(
+        student_key == _normalize_name(master_student)
+        or _normalize_name(master_student).startswith(f"{student_key} ")
+        for master_student in master_list
+    )
+    if full_match:
+        return True
+    return len(str(student).split()) == 1 and any(
+        student_key == _normalize_name(extraer_nombre(master_student))
+        for master_student in master_list
+    )
+
+
 def _sheet_sort_key(sheet_name: str):
     """Ordena las hojas AY2627 de segundo a duodécimo grado."""
     normalized_name = str(sheet_name).upper()
@@ -478,6 +494,7 @@ def process_workbook(file_bytes: bytes):
 
             pending_str = ", ".join(missing_display) if missing_display else ""
             low_score_str = ", ".join(low_names_general) if low_names_general else ""
+            primary_sections = _primary_sections(current_master)
 
             # === Fila para el DataFrame que consume la app ===
             # Mapear: avg_total_%  <- % completado
@@ -485,41 +502,61 @@ def process_workbook(file_bytes: bytes):
             #         low_or_pending_names <- pending + low (corto)
             
 
-            report_rows.append({
-                "quiz_id": quiz_code,
-                "total": str(total_students),
-                "submitted": str(completed),
-                "avg_total_%": completion_str,
-                "avg_submitted_%": avg_score_str,
-                "pending_names": pending_str,       # <--- SOLO pendientes
-                "low_names": low_score_str          # <--- SOLO low scores (<70)
-            })
+            if primary_sections:
+                for section_name, section_master in primary_sections:
+                    section_table = table[
+                        table["Student Name"].apply(
+                            lambda student: _student_belongs_to_master(student, section_master)
+                        )
+                    ]
+                    section_present = _find_present_master_students(
+                        section_master,
+                        section_table["Student Name"].dropna().unique().tolist(),
+                    )
+                    section_missing = [
+                        student for student in section_master
+                        if student not in set(section_present)
+                    ]
+                    section_low = section_table[section_table["Final Score"] < 70]
+                    section_completed = len(section_table)
+                    section_total = len(section_master)
+                    section_average = (
+                        section_table["Final Score"].mean() if section_completed else 0.0
+                    )
+                    report_rows.append({
+                        "quiz_id": f"{quiz_code} - {section_name}",
+                        "total": str(section_total),
+                        "submitted": str(section_completed),
+                        "avg_total_%": f"{(section_completed / section_total) * 100:.1f}%",
+                        "avg_submitted_%": f"{section_average:.1f}%",
+                        "pending_names": ", ".join(
+                            display_name(student) for student in section_missing
+                        ),
+                        "low_names": ", ".join(
+                            display_name(student) for student in section_low["Student Name"]
+                        ),
+                    })
+            else:
+                report_rows.append({
+                    "quiz_id": quiz_code,
+                    "total": str(total_students),
+                    "submitted": str(completed),
+                    "avg_total_%": completion_str,
+                    "avg_submitted_%": avg_score_str,
+                    "pending_names": pending_str,
+                    "low_names": low_score_str,
+                })
 
             # === Bloque para all_pending_low.txt (nombres completos y con % cuando aplica) ===
             block_lines = [f"Quiz: {sheet_name}\n"]
             low_score_lt_15 = table[table["Final Score"] < 15.1]["Student Name"].tolist()
             mid_low_df = table[(table["Final Score"] >= 15.1) & (table["Final Score"] < 75)][["Student Name", "Final Score"]]
-            primary_sections = _primary_sections(current_master)
 
             def students_for_section(students, section_master):
-                section_students = []
-                for student in students:
-                    student_key = _normalize_name(student)
-                    full_match = any(
-                        student_key == _normalize_name(master_student)
-                        or _normalize_name(master_student).startswith(f"{student_key} ")
-                        for master_student in section_master
-                    )
-                    short_match = (
-                        len(str(student).split()) == 1
-                        and any(
-                            student_key == _normalize_name(extraer_nombre(master_student))
-                            for master_student in section_master
-                        )
-                    )
-                    if full_match or short_match:
-                        section_students.append(student)
-                return section_students
+                return [
+                    student for student in students
+                    if _student_belongs_to_master(student, section_master)
+                ]
 
             def append_low_scores():
                 block_lines.append("\nLow Score (< 15.1%):\n")
