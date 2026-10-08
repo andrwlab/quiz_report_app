@@ -4,6 +4,7 @@
 #   2) pending_text (para mostrar/descargar all_pending_low.txt)
 
 import io
+import re
 import unicodedata
 import pandas as pd
 
@@ -29,7 +30,7 @@ master_students_3A = [
     "Alanna Gibell Castillo Jean-Louis", "Alida Duarte Castro", "Hilary Feng Zhong", "Danna Gomez",
     "Sofía He Liu", "Olivia Law Shiu", "Sara Luo", "Ana Victoria Marquez Onodera", "Luis Mendoza",
     "Luca Rafael Romero Puig", "Alexander Solis Salomon", "Jeremy Thobourne", "Sofia Wei Zhang",
-    "Eren Devin Yau Su", "Eiji Yoshioka", "Alberto Zhang Fan", "Daniela Zhang Fan", "William Zhang",
+    "Eren Devin Yau Su", "Alberto Zhang Fan", "Daniela Zhang Fan", "William Zhang",
     "Javier Zheng", "Erick Zhong Hou"
 ]
 
@@ -42,11 +43,11 @@ master_students_3B = [
 ]
 
 master_students_4A = [
-    "Humberto Amores", "Mia Alvarado", "Victoria Campos", "Kevin Joel Chen Liu", "Daniel Chen Wong",
+    "Mia Alvarado", "Humberto Amores", "Victoria Campos", "Kevin Joel Chen Liu", "Daniel Chen Wong",
     "Guillermo Chen", "Jay Cheung", "Tania Isabel He Chen", "Carlos Hou Zhang Xu Xuan",
     "Angeline Alejandra Lizondro Bello", "Jennifer Ainhoa Lopez Silva", "Jennyfer Luo Luo",
     "Ana Sofia Luo Zhang", "Tom Luo", "Hamet Perez Christie", "Eugene Abdel Pinto Navarro", "Mateo Ricord",
-    "Diago Rodríguez Delgado", "Axel Javier Sinisterra Quintero", "Kaylie Wu Liu", "Kenji Yoshioka",
+    "Diago Rodríguez Delgado", "Axel Javier Sinisterra Quintero", "Evan Spencer", "Kaylie Wu Liu",
     "Kevin Zhang Luo", "Angela Zhang Zhong", "Evanys Zheng"
 ]
 
@@ -208,7 +209,23 @@ def extraer_nombre(nombre):
 
 def _pick_master_by_sheet_name(sheet_name: str):
     """Selecciona la lista maestra AY2627 según grado o código de clase."""
+    section_masters = {
+        "2A": master_students_2A,
+        "2B": master_students_2B,
+        "3A": master_students_3A,
+        "3B": master_students_3B,
+        "4A": master_students_4A,
+        "4B": master_students_4B,
+        "5A": master_students_5A,
+        "5B": master_students_5B,
+        "6A": master_students_6A,
+    }
     masters_by_grade = {
+        "02": MASTER_GROUPS["2"],
+        "03": MASTER_GROUPS["3"],
+        "04": MASTER_GROUPS["4"],
+        "05": MASTER_GROUPS["5"],
+        "06": master_students_6A,
         "07": master_students_7A,
         "08": master_students_8G,
         "09": master_students_9A,
@@ -217,6 +234,11 @@ def _pick_master_by_sheet_name(sheet_name: str):
         "12": master_students_12A,
     }
     class_codes = {
+        "MD": MASTER_GROUPS["2"],
+        "ME": MASTER_GROUPS["3"],
+        "MF": MASTER_GROUPS["4"],
+        "MG": MASTER_GROUPS["5"],
+        "MH": master_students_6A,
         "MI": master_students_7A,
         "MJ": master_students_8G,
         "MK": master_students_9A,
@@ -226,6 +248,9 @@ def _pick_master_by_sheet_name(sheet_name: str):
     }
 
     normalized_name = str(sheet_name).upper()
+    for section, master in section_masters.items():
+        if re.search(rf"(?<!\d)0?{re.escape(section)}(?!\d)", normalized_name):
+            return master
     # Algunos reportes de décimo han usado "00" en vez de "10".
     if normalized_name.startswith("2627-00"):
         return master_students_10A
@@ -312,21 +337,38 @@ def _infer_master_from_students(student_names):
     return []
 
 
+def _is_primary_master(master_list) -> bool:
+    """Indica si la lista seleccionada corresponde a segundo-sexto grado."""
+    primary_masters = [
+        master_students_2A, master_students_2B, MASTER_GROUPS["2"],
+        master_students_3A, master_students_3B, MASTER_GROUPS["3"],
+        master_students_4A, master_students_4B, MASTER_GROUPS["4"],
+        master_students_5A, master_students_5B, MASTER_GROUPS["5"],
+        master_students_6A,
+    ]
+    return any(master_list is primary_master for primary_master in primary_masters)
+
+
 def _sheet_sort_key(sheet_name: str):
-    """Ordena las hojas AY2627 de séptimo a duodécimo grado."""
+    """Ordena las hojas AY2627 de segundo a duodécimo grado."""
     normalized_name = str(sheet_name).upper()
     grade_markers = [
-        (("2627-07", "MI"), 0),
-        (("2627-08", "MJ"), 1),
-        (("2627-09", "MK"), 2),
-        (("2627-10", "2627-00", "ML"), 3),
-        (("2627-11", "MM"), 4),
-        (("2627-12", "MN"), 5),
+        (("2627-02", "MD"), 0),
+        (("2627-03", "ME"), 1),
+        (("2627-04", "MF"), 2),
+        (("2627-05", "MG"), 3),
+        (("2627-06", "MH"), 4),
+        (("2627-07", "MI"), 5),
+        (("2627-08", "MJ"), 6),
+        (("2627-09", "MK"), 7),
+        (("2627-10", "2627-00", "ML"), 8),
+        (("2627-11", "MM"), 9),
+        (("2627-12", "MN"), 10),
     ]
     for markers, order in grade_markers:
         if any(marker in normalized_name for marker in markers):
             return (order, normalized_name)
-    return (6, normalized_name)
+    return (11, normalized_name)
 
 
 def process_workbook(file_bytes: bytes):
@@ -421,22 +463,28 @@ def process_workbook(file_bytes: bytes):
 
             # === Bloque para all_pending_low.txt (nombres completos y con % cuando aplica) ===
             block_lines = [f"Quiz: {sheet_name}\n"]
-            # Pending
-            block_lines.append("\nPending:\n")
-            for st in missing_students:
-                block_lines.append(f"{st}\n")
-
-            # Low Score (< 15.1%)
             low_score_lt_15 = table[table["Final Score"] < 15.1]["Student Name"].tolist()
-            block_lines.append("\nLow Score (< 15.1%):\n")
-            for st in low_score_lt_15:
-                block_lines.append(f"{st}\n")
-
-            # Low Score (15.1% - 74.9%)
             mid_low_df = table[(table["Final Score"] >= 15.1) & (table["Final Score"] < 75)][["Student Name", "Final Score"]]
-            block_lines.append("\nLow Score (15.1% - 74.9%):\n")
-            for _, row in mid_low_df.iterrows():
-                block_lines.append(f"{row['Student Name']} - {row['Final Score']:.1f}%\n")
+
+            def append_low_scores():
+                block_lines.append("\nLow Score (< 15.1%):\n")
+                for st in low_score_lt_15:
+                    block_lines.append(f"{st}\n")
+                block_lines.append("\nLow Score (15.1% - 74.9%):\n")
+                for _, row in mid_low_df.iterrows():
+                    block_lines.append(f"{row['Student Name']} - {row['Final Score']:.1f}%\n")
+
+            def append_no_attempts(label="Pending"):
+                block_lines.append(f"\n{label}:\n")
+                for st in missing_students:
+                    block_lines.append(f"{st}\n")
+
+            if _is_primary_master(current_master):
+                append_low_scores()
+                append_no_attempts("No attempts")
+            else:
+                append_no_attempts()
+                append_low_scores()
 
             block_lines.append("\n" + "_" * 44 + "\n")
             pending_blocks.append("".join(block_lines))
