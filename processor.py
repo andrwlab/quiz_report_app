@@ -349,6 +349,20 @@ def _is_primary_master(master_list) -> bool:
     return any(master_list is primary_master for primary_master in primary_masters)
 
 
+def _primary_sections(master_list):
+    """Devuelve las secciones A/B de una lista combinada, siempre en ese orden."""
+    combined_sections = [
+        (MASTER_GROUPS["2"], [("2A", master_students_2A), ("2B", master_students_2B)]),
+        (MASTER_GROUPS["3"], [("3A", master_students_3A), ("3B", master_students_3B)]),
+        (MASTER_GROUPS["4"], [("4A", master_students_4A), ("4B", master_students_4B)]),
+        (MASTER_GROUPS["5"], [("5A", master_students_5A), ("5B", master_students_5B)]),
+    ]
+    for combined_master, sections in combined_sections:
+        if master_list is combined_master:
+            return sections
+    return []
+
+
 def _primary_display_name(name: str) -> str:
     """Abrevia primaria como nombre + inicial del apellido."""
     normalized_name = _normalize_name(name)
@@ -485,19 +499,64 @@ def process_workbook(file_bytes: bytes):
             block_lines = [f"Quiz: {sheet_name}\n"]
             low_score_lt_15 = table[table["Final Score"] < 15.1]["Student Name"].tolist()
             mid_low_df = table[(table["Final Score"] >= 15.1) & (table["Final Score"] < 75)][["Student Name", "Final Score"]]
+            primary_sections = _primary_sections(current_master)
+
+            def students_for_section(students, section_master):
+                section_students = []
+                for student in students:
+                    student_key = _normalize_name(student)
+                    full_match = any(
+                        student_key == _normalize_name(master_student)
+                        or _normalize_name(master_student).startswith(f"{student_key} ")
+                        for master_student in section_master
+                    )
+                    short_match = (
+                        len(str(student).split()) == 1
+                        and any(
+                            student_key == _normalize_name(extraer_nombre(master_student))
+                            for master_student in section_master
+                        )
+                    )
+                    if full_match or short_match:
+                        section_students.append(student)
+                return section_students
 
             def append_low_scores():
                 block_lines.append("\nLow Score (< 15.1%):\n")
-                for st in low_score_lt_15:
-                    block_lines.append(f"{st}\n")
+                if primary_sections:
+                    for section_name, section_master in primary_sections:
+                        block_lines.append(f"{section_name}:\n")
+                        for st in students_for_section(low_score_lt_15, section_master):
+                            block_lines.append(f"{st}\n")
+                else:
+                    for st in low_score_lt_15:
+                        block_lines.append(f"{st}\n")
+
                 block_lines.append("\nLow Score (15.1% - 74.9%):\n")
-                for _, row in mid_low_df.iterrows():
-                    block_lines.append(f"{row['Student Name']} - {row['Final Score']:.1f}%\n")
+                if primary_sections:
+                    for section_name, section_master in primary_sections:
+                        block_lines.append(f"{section_name}:\n")
+                        section_students = students_for_section(
+                            mid_low_df["Student Name"].tolist(), section_master
+                        )
+                        for _, row in mid_low_df[mid_low_df["Student Name"].isin(section_students)].iterrows():
+                            block_lines.append(f"{row['Student Name']} - {row['Final Score']:.1f}%\n")
+                else:
+                    for _, row in mid_low_df.iterrows():
+                        block_lines.append(f"{row['Student Name']} - {row['Final Score']:.1f}%\n")
 
             def append_no_attempts(label="Pending"):
                 block_lines.append(f"\n{label}:\n")
-                for st in missing_students:
-                    block_lines.append(f"{st}\n")
+                if primary_sections:
+                    missing_set = set(missing_students)
+                    for section_name, section_master in primary_sections:
+                        block_lines.append(f"{section_name}:\n")
+                        for st in section_master:
+                            if st in missing_set:
+                                block_lines.append(f"{st}\n")
+                else:
+                    for st in missing_students:
+                        block_lines.append(f"{st}\n")
 
             if is_primary:
                 append_low_scores()
