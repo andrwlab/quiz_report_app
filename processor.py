@@ -349,6 +349,24 @@ def _is_primary_master(master_list) -> bool:
     return any(master_list is primary_master for primary_master in primary_masters)
 
 
+def _primary_display_name(name: str) -> str:
+    """Abrevia primaria como nombre + inicial del apellido."""
+    normalized_name = _normalize_name(name)
+    special_names = {
+        "daniel cepeda": "D. Cepeda",
+        "daniel cepeda shiu": "D. Cepeda",
+        "daniel chen": "D. Chen",
+        "daniel chen wong": "D. Chen",
+    }
+    if normalized_name in special_names:
+        return special_names[normalized_name]
+
+    parts = str(name).split()
+    if len(parts) < 2:
+        return parts[0] if parts else ""
+    return f"{parts[0]} {parts[-1][0]}."
+
+
 def _sheet_sort_key(sheet_name: str):
     """Ordena las hojas AY2627 de segundo a duodécimo grado."""
     normalized_name = str(sheet_name).upper()
@@ -410,6 +428,7 @@ def process_workbook(file_bytes: bytes):
         current_master = _pick_master_by_sheet_name(sheet_name)
         if not current_master:
             current_master = _infer_master_from_students(student_names)
+        is_primary = _is_primary_master(current_master)
 
         if not table.empty and ("Student Name" in table.columns) and ("Final Score" in table.columns):
             # Final Score a float
@@ -422,7 +441,8 @@ def process_workbook(file_bytes: bytes):
 
             # < 70 para el reporte general (nombres “cortos”)
             low_score_general = table[table["Final Score"] < 70].copy()
-            low_score_general.loc[:, "Display Name"] = low_score_general["Student Name"].apply(extraer_nombre)
+            display_name = _primary_display_name if is_primary else extraer_nombre
+            low_score_general.loc[:, "Display Name"] = low_score_general["Student Name"].apply(display_name)
             low_names_general = low_score_general["Display Name"].tolist()
 
             # Métricas de reporte
@@ -440,7 +460,7 @@ def process_workbook(file_bytes: bytes):
                 table["Student Name"].dropna().unique().tolist()
             )
             missing_students = [st for st in current_master if st not in set(present_students)]
-            missing_display = [extraer_nombre(st) for st in missing_students]
+            missing_display = [display_name(st) for st in missing_students]
 
             pending_str = ", ".join(missing_display) if missing_display else ""
             low_score_str = ", ".join(low_names_general) if low_names_general else ""
@@ -479,7 +499,7 @@ def process_workbook(file_bytes: bytes):
                 for st in missing_students:
                     block_lines.append(f"{st}\n")
 
-            if _is_primary_master(current_master):
+            if is_primary:
                 append_low_scores()
                 append_no_attempts("No attempts")
             else:
