@@ -22,10 +22,10 @@ CSS = '''
 html,body,#root,[data-testid="stApp"],[data-testid="stAppViewContainer"],[data-testid="stMain"]{background-color:#141213!important;color-scheme:dark!important}
 .quiz-mobile-shell{font:16px system-ui;color:#F6F4F1}
 .quiz-mobile-shell *{box-sizing:border-box}
-.quiz-fab-bar{position:fixed;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));display:flex;gap:10px;z-index:2147483646}
+.quiz-fab-bar{position:fixed;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(var(--quiz-host-bottom,72px) + 20px + env(safe-area-inset-bottom,0px));display:flex;gap:10px;z-index:2147483646}
 .quiz-mobile-shell .quiz-fab{appearance:none;-webkit-appearance:none;display:inline-flex;align-items:center;justify-content:center;width:50px;height:50px;border-radius:50%!important;padding:0;color:#EACA7A!important;background:#302A20!important;border:1px solid #817869;box-shadow:0 3px 16px #0008;cursor:pointer;touch-action:manipulation}
 .quiz-mobile-shell button:focus-visible,.quiz-mobile-shell a:focus-visible,.quiz-mobile-shell select:focus-visible{outline:2px solid #EACA7A;outline-offset:4px}
-.quiz-fab-menu{position:fixed;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(82px + env(safe-area-inset-bottom,0px));z-index:2147483646;background:#242122;border:1px solid #635B51;border-radius:18px;padding:14px;width:min(300px,calc(100vw - 36px));max-height:calc(100dvh - 150px);overflow:auto;color:#F6F4F1;box-shadow:0 5px 24px #0008}
+.quiz-fab-menu{position:fixed;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(var(--quiz-host-bottom,72px) + 82px + env(safe-area-inset-bottom,0px));z-index:2147483646;background:#242122;border:1px solid #635B51;border-radius:18px;padding:14px;width:min(300px,calc(100vw - 36px));max-height:calc(100dvh - var(--quiz-host-top,72px) - var(--quiz-host-bottom,72px) - 150px);overflow:auto;color:#F6F4F1;box-shadow:0 5px 24px #0008}
 .quiz-mobile-shell [hidden]{display:none!important}
 .quiz-fab-menu button,.quiz-fab-menu a,.quiz-fab-menu select{font:inherit;display:block;width:100%;margin:8px 0;padding:10px 12px;text-align:center;border-radius:22px!important;border:1px solid #696064;background:#302C2D;color:#F6F4F1;text-decoration:none;cursor:pointer}
 .quiz-fab-menu p{font-size:14px;line-height:1.5;margin:8px 0}
@@ -68,6 +68,36 @@ export default function({data, parentElement}) {
   theme(document);
   try { if (window.top !== window) theme(window.top.document); } catch (_) {}
 
+  // Reserve space for Streamlit controls, including cross-origin hosting chrome.
+  let layoutFrame = 0;
+  function updateInsets() {
+    layoutFrame = 0;
+    const height = window.innerHeight;
+    let topInset = 72, bottomInset = 72;
+    for (const el of document.querySelectorAll('[data-testid="stHeader"],[data-testid="stToolbar"]')) {
+      const rect = el.getBoundingClientRect();
+      if (rect.width && rect.height && rect.top >= 0 && rect.top < 100 && rect.height < 160) topInset = Math.max(topInset, rect.bottom);
+    }
+    for (const el of document.querySelectorAll('button,a,[role="button"]')) {
+      if (root.contains(el) || !/^(manage app|hosted with streamlit|made with streamlit)$/i.test(el.textContent.trim())) continue;
+      const rect = el.getBoundingClientRect();
+      if (rect.width && rect.height && rect.top > height * .6 && rect.bottom <= height + 2) bottomInset = Math.max(bottomInset, height - rect.top);
+    }
+    const viewport = window.visualViewport;
+    if (viewport) bottomInset = Math.max(bottomInset, height - viewport.height - viewport.offsetTop);
+    document.documentElement.style.setProperty('--quiz-host-top', Math.ceil(topInset) + 'px');
+    document.documentElement.style.setProperty('--quiz-host-bottom', Math.ceil(bottomInset) + 'px');
+  }
+  const scheduleInsets = () => {if (!layoutFrame) layoutFrame = requestAnimationFrame(updateInsets);};
+  updateInsets();
+  const resizeObserver = new ResizeObserver(scheduleInsets);
+  document.querySelectorAll('[data-testid="stHeader"],[data-testid="stToolbar"]').forEach(el=>resizeObserver.observe(el));
+  const mutations = new MutationObserver(scheduleInsets);
+  mutations.observe(document.body, {childList:true,subtree:true});
+  window.addEventListener('resize', scheduleInsets);
+  window.visualViewport?.addEventListener('resize', scheduleInsets);
+  window.visualViewport?.addEventListener('scroll', scheduleInsets);
+
   root.querySelector('[data-empty]').hidden = reports.length > 0;
   root.querySelector('[data-picker]').hidden = reports.length < 2;
   [share,copyButton,pdf].forEach(el=>el.hidden=!reports.length);
@@ -93,7 +123,15 @@ export default function({data, parentElement}) {
   share.onclick=async()=>{if(!reports[selected])return;if(navigator.share){try{await navigator.share({title:'SABIS Quiz Status',text:reports[selected].text});}catch(e){if(e.name!=='AbortError')await copy();}}else await copy();};
   const onKey=e=>{if(e.key==='Escape'&&!menu.hidden){menu.hidden=true;plus.setAttribute('aria-expanded','false');plus.focus();}};
   document.addEventListener('keydown',onKey);
-  return ()=>{document.removeEventListener('keydown',onKey);root.remove();};
+  return ()=>{
+    document.removeEventListener('keydown',onKey);
+    window.removeEventListener('resize',scheduleInsets);
+    window.visualViewport?.removeEventListener('resize',scheduleInsets);
+    window.visualViewport?.removeEventListener('scroll',scheduleInsets);
+    resizeObserver.disconnect();mutations.disconnect();
+    if(layoutFrame)cancelAnimationFrame(layoutFrame);
+    root.remove();
+  };
 }
 '''
 
