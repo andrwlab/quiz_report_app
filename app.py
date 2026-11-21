@@ -2,9 +2,9 @@ import streamlit as st
 import pandas as pd
 
 # --- Page config
-st.set_page_config(page_title="SABIS Quiz Report Builder", page_icon="🧮", layout="wide")
+st.set_page_config(page_title="Quiz Report Builder", page_icon="🧮", layout="wide")
 
-st.title("🧮 SABIS Quiz Report Builder")
+st.title("🧮 Quiz Report Builder")
 st.caption("Arrastra uno o varios archivos *QuizResultsByStudent-QuizDetails…* (.xls/.xlsx). El procesamiento corre automáticamente.")
 
 # --- Session state
