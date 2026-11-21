@@ -12,7 +12,8 @@ CSS = '''
 <style>
 html,body,#root,[data-testid="stApp"],[data-testid="stAppViewContainer"],[data-testid="stMain"] {background:#141213!important;color:#F6F4F1;color-scheme:dark!important}
 .stApp {background:#141213;color:#F6F4F1}
-[data-testid="stMainBlockContainer"] {padding-bottom:calc(110px + env(safe-area-inset-bottom,0px))!important}
+[data-testid="stMainBlockContainer"],.block-container {padding-top:calc(var(--quiz-host-top,72px) + 24px + env(safe-area-inset-top,0px))!important;padding-bottom:calc(var(--quiz-host-bottom,72px) + 94px + env(safe-area-inset-bottom,0px))!important}
+[data-testid="stMain"] {scroll-padding-top:calc(var(--quiz-host-top,72px) + 20px)}
 .block-container {max-width:960px;padding:2rem 1.2rem 5rem}
 [data-testid="stHeader"] {background:#141213!important}
 input, [data-baseweb="select"]>div {border-radius:32px!important;background:#272526!important;color:#F6F4F1!important}
@@ -32,7 +33,8 @@ input {padding:1.3rem!important}
 [data-testid="stForm"] input:-webkit-autofill {-webkit-box-shadow:0 0 0 1000px #343236 inset!important;-webkit-text-fill-color:#F6F4F1!important}
 button {border-radius:28px!important}
 .stApp h1.search-title {font-size:clamp(2rem,6vw,4.4rem)!important;font-weight:550;line-height:1.12;letter-spacing:-.055em;color:#F6F4F1;margin:12px 0 0;padding:0}
-.brand {display:flex;justify-content:space-between;gap:12px;align-items:start}
+.brand {display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:start}
+.power {margin-left:auto}
 .power {color:#EACA7A;font-style:italic;font-size:.85rem;text-align:right}
 .meta {color:#BBB7B9;font-size:.85rem;margin:8px 0 20px}
 .book {text-align:center;color:#EACA7A;margin:42px 0 32px}
