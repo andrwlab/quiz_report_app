@@ -50,7 +50,8 @@ def run(teacher=False):
         records = [r for r in filtered if r['number'] == student['Student Number']]
         if teacher and not records:
             continue
-        render_student(student, records, snapshot['updated_at'])
+        all_records = [r for r in relevant if r['number'] == student['Student Number']]
+        render_student(student, records, snapshot['updated_at'], all_records=all_records)
         shown += 1
     if teacher and not shown:
         st.info('No matching quizzes. Select a group or change the filters.')
