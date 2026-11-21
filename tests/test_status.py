@@ -120,6 +120,9 @@ class PipelineTests(unittest.TestCase):
             render_student(student, [], '2026-11-21T10:00:00-05:00', all_records=[])
         markup = html.call_args.args[0]
         self.assertIn('class="quiz-all-current"', markup)
+        self.assertNotIn('class="student-totals"', markup)
+        self.assertNotIn('class="student-total-number"', markup)
+        self.assertIn('Este estudiante se encuentra al día', markup)
         self.assertIn('fill="#BEF0D5"', markup)
         self.assertIn('stroke="#FFFFFF"', markup)
         self.assertNotIn('No matching quizzes for these filters.', markup)
