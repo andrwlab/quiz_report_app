@@ -148,10 +148,12 @@ class PipelineTests(unittest.TestCase):
             self.assertNotIn('Demo Alpha', str(app))
             app.text_input[0].set_value('001')
             app.button[0].click().run()
+            self.assertEqual(app.session_state['quiz_shine_cycle'], 1)
             self.assertFalse(app.exception)
             self.assertNotIn('Demo Beta', str(app))
             self.assertEqual([x.label for x in app.selectbox], ['Subject','Status'])
             app.selectbox[1].select('Low Score').run()
+            self.assertEqual(app.session_state['quiz_shine_cycle'], 1)
             self.assertFalse(app.exception)
             for entry in ['admin.py', 'teacher.py', 'legacy_builder.py']:
                 protected = AppTest.from_file(entry).run()

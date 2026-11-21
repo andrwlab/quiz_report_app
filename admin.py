@@ -3,9 +3,9 @@ from auth import require_access
 from data_pipeline import read_roster, parse_workbook, ValidationError
 from storage_config import get_store, settings
 
-st.set_page_config(page_title='SABIS Administration', page_icon='📖')
+st.set_page_config(page_title='Quiz Administration', page_icon='📖')
 require_access('admin')
-st.title('SABIS · Administration')
+st.title('Quiz · Administration')
 mode = st.radio('Workspace', ['Publish quiz status', 'Legacy report builder'])
 if mode == 'Legacy report builder':
     import runpy
@@ -26,7 +26,7 @@ if settings()[0] == 'google_sheets':
     st.stop()
 st.caption('Publish a complete replacement. Validation failure keeps the last successful publication.')
 roster_file = st.file_uploader('Official roster CSV or HS Class Lists Excel', type=['csv', 'xlsx'])
-workbook = st.file_uploader('SABIS workbook', type=['xlsx', 'xls'])
+workbook = st.file_uploader('Quiz workbook', type=['xlsx', 'xls'])
 
 @st.cache_data(show_spinner=False, max_entries=2, ttl=600)
 def validate(workbook_bytes, roster_bytes):

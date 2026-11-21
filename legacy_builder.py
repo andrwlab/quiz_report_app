@@ -2,12 +2,12 @@ import streamlit as st
 import pandas as pd
 from auth import require_access
 if not globals().get("LEGACY_EMBEDDED"):
-    st.set_page_config(page_title="SABIS Quiz Report Builder", page_icon="🧮", layout="wide")
+    st.set_page_config(page_title="Quiz Report Builder", page_icon="🧮", layout="wide")
     require_access("admin")
 import hashlib
 
 # --- Page config
-st.title("🧮 SABIS Quiz Report Builder")
+st.title("🧮 Quiz Report Builder")
 st.caption("Arrastra uno o varios archivos *QuizResultsByStudent-QuizDetails…* (.xls/.xlsx). El procesamiento corre automáticamente.")
 
 # --- Session state

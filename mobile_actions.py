@@ -98,6 +98,37 @@ export default function({data, parentElement}) {
   window.visualViewport?.addEventListener('resize', scheduleInsets);
   window.visualViewport?.addEventListener('scroll', scheduleInsets);
 
+  // Replay only for the initial page and a submitted student search, not filters.
+  let shineTimer = null;
+  const glints = new Set();
+  const shineToken = data?.shineToken ?? 0;
+  async function playGlint(target, duration) {
+    if (!target) return true;
+    const overlay = document.createElement('span');
+    overlay.className = 'quiz-gold-glint';
+    overlay.textContent = target.textContent;
+    overlay.setAttribute('aria-hidden', 'true');
+    target.append(overlay);
+    const animation = overlay.animate(
+      [{backgroundPosition:'-100% 0'}, {backgroundPosition:'150% 0'}],
+      {duration, easing:'linear', fill:'both'}
+    );
+    const item = {overlay, animation};
+    glints.add(item);
+    try {await animation.finished; return true;}
+    catch (_) {return false;}
+    finally {overlay.remove();glints.delete(item);}
+  }
+  if (window.__quizShineToken !== shineToken) {
+    window.__quizShineToken = shineToken;
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      shineTimer = setTimeout(async () => {
+        const finished = await playGlint(document.querySelector('[data-quiz-shine="title"]'), 450);
+        if (finished) await playGlint(document.querySelector('[data-quiz-shine="credit"]'), 300);
+      }, 500);
+    }
+  }
+
   root.querySelector('[data-empty]').hidden = reports.length > 0;
   root.querySelector('[data-picker]').hidden = reports.length < 2;
   [share,copyButton,pdf].forEach(el=>el.hidden=!reports.length);
@@ -120,10 +151,12 @@ export default function({data, parentElement}) {
     catch(_){let area=menu.querySelector('textarea');if(!area){area=document.createElement('textarea');area.readOnly=true;area.setAttribute('aria-label','Report text to copy');menu.append(area);}area.value=text;area.focus();area.select();feedback.textContent=document.execCommand('copy')?'Report copied.':'Select and copy the report below.';}
   }
   copyButton.onclick=copy;
-  share.onclick=async()=>{if(!reports[selected])return;if(navigator.share){try{await navigator.share({title:'SABIS Quiz Status',text:reports[selected].text});}catch(e){if(e.name!=='AbortError')await copy();}}else await copy();};
+  share.onclick=async()=>{if(!reports[selected])return;if(navigator.share){try{await navigator.share({title:'Quiz Status',text:reports[selected].text});}catch(e){if(e.name!=='AbortError')await copy();}}else await copy();};
   const onKey=e=>{if(e.key==='Escape'&&!menu.hidden){menu.hidden=true;plus.setAttribute('aria-expanded','false');plus.focus();}};
   document.addEventListener('keydown',onKey);
   return ()=>{
+    if(shineTimer!==null)clearTimeout(shineTimer);
+    glints.forEach(({overlay,animation})=>{animation.cancel();overlay.remove();});
     document.removeEventListener('keydown',onKey);
     window.removeEventListener('resize',scheduleInsets);
     window.visualViewport?.removeEventListener('resize',scheduleInsets);
@@ -135,8 +168,8 @@ export default function({data, parentElement}) {
 }
 '''
 
-_actions = component('sabis_mobile_actions', html=HTML, css=CSS, js=JS)
+_actions = component('quiz_mobile_actions', html=HTML, css=CSS, js=JS)
 
 
-def render_actions(reports):
-    _actions(data={'reports': reports}, key='sabis_mobile_actions', height=0, isolate_styles=False)
+def render_actions(reports, *, shine_token=0):
+    _actions(data={'reports': reports, 'shineToken': shine_token}, key='quiz_mobile_actions', height=0, isolate_styles=False)

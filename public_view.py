@@ -7,14 +7,14 @@ from mobile_actions import render_actions
 
 def run(teacher=False):
     reports = _run_view(teacher)
-    render_actions(reports or [])
+    render_actions(reports or [], shine_token=st.session_state.get('quiz_shine_cycle', 0))
 
 
 def _run_view(teacher=False):
     try:
         snapshot = get_store().read()
     except (ValueError, OSError) as error:
-        logging.getLogger(__name__).error('SABIS_CONNECTION_ERROR: %s', error)
+        logging.getLogger(__name__).error('QUIZ_CONNECTION_ERROR: %s', error)
         st.error('Published data is temporarily unavailable. The administrator must check the Google Sheets connection.')
         return
     header(snapshot)
@@ -36,6 +36,7 @@ def _run_view(teacher=False):
             with search_action:
                 submitted = st.form_submit_button('Search', type='primary', use_container_width=True)
         if submitted:
+            st.session_state['quiz_shine_cycle'] = st.session_state.get('quiz_shine_cycle', 0) + 1
             st.session_state['student_query'] = query
         active_query = st.session_state.get('student_query', '')
         # Exact identity lookup only; no roster or name suggestions in the student client.

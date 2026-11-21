@@ -34,6 +34,9 @@ input {padding:1.3rem!important}
 [data-testid="stForm"] input:-webkit-autofill {-webkit-box-shadow:0 0 0 1000px #343236 inset!important;-webkit-text-fill-color:#F6F4F1!important}
 button {border-radius:28px!important}
 .stApp h1.search-title {font-size:clamp(2rem,6vw,4.4rem)!important;font-weight:550;line-height:1.12;letter-spacing:-.055em;color:#F6F4F1;margin:12px 0 0;padding:0}
+.quiz-shine-host {position:relative;display:inline-block}
+.quiz-gold-glint {position:absolute;inset:0;pointer-events:none;user-select:none;font:inherit;letter-spacing:inherit;line-height:inherit;white-space:inherit;color:transparent!important;-webkit-text-fill-color:transparent;background-image:linear-gradient(110deg,transparent 39%,#EACA7A 46%,#FFFBEA 50%,#F6D989 54%,transparent 61%);background-size:250% 100%;background-repeat:no-repeat;background-position:-100% 0;background-clip:text;-webkit-background-clip:text;filter:drop-shadow(0 0 3px #EACA7A55)}
+@media(prefers-reduced-motion:reduce){.quiz-gold-glint{display:none!important}}
 .brand {display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:start}
 .power {margin-left:auto}
 .power {color:#EACA7A;font-style:italic;font-size:.85rem;text-align:right}
@@ -45,10 +48,10 @@ button {border-radius:28px!important}
 
 def header(snapshot):
     st.markdown(CSS, unsafe_allow_html=True)
-    st.markdown('<div class="brand"><strong>SABIS Quiz Status</strong><span class="power">Powered by The Mister</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="brand"><strong>Quiz Status</strong><span class="power quiz-shine-host" data-quiz-shine="credit">Powered by The Mister</span></div>', unsafe_allow_html=True)
     updated = publication_time(snapshot['updated_at']) + ' · America/Panama' if snapshot else 'Not published yet'
     st.markdown(f'<div class="meta">Data last updated&nbsp; | &nbsp;{escape(updated)}</div>', unsafe_allow_html=True)
-    st.markdown('''<div class="book"><svg width="54" height="44" viewBox="0 0 80 64" fill="none" stroke="currentColor" stroke-width="4" aria-label="Open book" role="img"><path d="M40 13Q22 0 4 12V57Q22 46 40 59Q58 46 76 57V12Q58 0 40 13V59"/></svg><h1 class="search-title">SABIS Quiz Status</h1></div>''', unsafe_allow_html=True)
+    st.markdown('''<div class="book"><svg width="54" height="44" viewBox="0 0 80 64" fill="none" stroke="currentColor" stroke-width="4" aria-label="Open book" role="img"><path d="M40 13Q22 0 4 12V57Q22 46 40 59Q58 46 76 57V12Q58 0 40 13V59"/></svg><h1 class="search-title quiz-shine-host" data-quiz-shine="title">Quiz Status</h1></div>''', unsafe_allow_html=True)
 
 
 def render_student(student, records, updated_at, *, all_records=None):
@@ -117,12 +120,12 @@ RESULT_STYLES = """
 .quiz-results .student-total-number{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;border-radius:999px;padding:0 6px;color:#141213;font-size:14px;font-weight:750;font-variant-numeric:tabular-nums}
 .quiz-results .quiz-all-current{min-height:250px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px 16px}
 .quiz-results .completion-icon{width:108px;height:108px;overflow:visible}
-.quiz-results .completion-disc{transform-origin:50px 50px;animation:sabis-complete-circle .45s ease-out both}
-.quiz-results .completion-check{stroke-dasharray:66;stroke-dashoffset:66;filter:drop-shadow(0 1px 1px #28584035);animation:sabis-complete-check .5s .25s ease-out both}
+.quiz-results .completion-disc{transform-origin:50px 50px;animation:quiz-complete-circle .45s ease-out both}
+.quiz-results .completion-check{stroke-dasharray:66;stroke-dashoffset:66;filter:drop-shadow(0 1px 1px #28584035);animation:quiz-complete-check .5s .25s ease-out both}
 .quiz-results .completion-title{font-size:22px;font-weight:650;margin:22px 0 6px}
 .quiz-results .completion-caption{font-size:15px;color:#BDB8BC;margin:0}
-@keyframes sabis-complete-circle{from{opacity:0;transform:scale(.75)}to{opacity:1;transform:scale(1)}}
-@keyframes sabis-complete-check{to{stroke-dashoffset:0}}
+@keyframes quiz-complete-circle{from{opacity:0;transform:scale(.75)}to{opacity:1;transform:scale(1)}}
+@keyframes quiz-complete-check{to{stroke-dashoffset:0}}
 @media(prefers-reduced-motion:reduce){.quiz-results .completion-disc,.quiz-results .completion-check{animation:none;stroke-dashoffset:0}}
 .quiz-results details{margin:24px 0}
 .quiz-results summary{padding-left:12px;font-size:22px;font-weight:650;cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px}
