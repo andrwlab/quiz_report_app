@@ -122,7 +122,7 @@ class PipelineTests(unittest.TestCase):
         self.assertIn('class="quiz-all-current"', markup)
         self.assertNotIn('class="student-totals"', markup)
         self.assertNotIn('class="student-total-number"', markup)
-        self.assertIn('Este estudiante se encuentra al día', markup)
+        self.assertIn('This student is up to date', markup)
         self.assertIn('fill="#BEF0D5"', markup)
         self.assertIn('stroke="#FFFFFF"', markup)
         self.assertNotIn('No matching quizzes for these filters.', markup)
