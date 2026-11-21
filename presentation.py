@@ -45,7 +45,16 @@ def header(snapshot):
     st.markdown('''<div class="book"><svg width="54" height="44" viewBox="0 0 80 64" fill="none" stroke="currentColor" stroke-width="4" aria-label="Open book" role="img"><path d="M40 13Q22 0 4 12V57Q22 46 40 59Q58 46 76 57V12Q58 0 40 13V59"/></svg><h1 class="search-title">SABIS Quiz Status</h1></div>''', unsafe_allow_html=True)
 
 
-def render_student(student, records, updated_at):
+def render_student(student, records, updated_at, *, all_records=None):
+    total_records = records if all_records is None else all_records
+    total_badges = []
+    for status, tone in [('Pending', PENDING_COLOR), ('Low Score', GOLD)]:
+        total = sum(record['status'] == status for record in total_records)
+        total_badges.append(
+            f'<span class="student-total" style="color:{tone};background:{tone}20" '
+            f'aria-label="{total} {status} quizzes across all subjects">'
+            f'<span>{status}</span><span class="student-total-number" style="background:{tone}">{total}</span></span>'
+        )
     sections = []
     for subject, statuses in grouped(records).items():
         color = SUBJECT_COLORS[int(hashlib.sha256(subject.encode()).hexdigest(), 16) % len(SUBJECT_COLORS)]
@@ -74,14 +83,14 @@ def render_student(student, records, updated_at):
     components.html('''<style>
 *{box-sizing:border-box}body{margin:0;background:#141213;color:#F6F4F1;font:16px system-ui}
 #results{height:640px;overflow:auto;padding:0 10px 100px;scroll-behavior:smooth}
-h2{font-size:24px;margin:16px 0 32px}details{margin:24px 0}summary{padding-left:12px;font-size:22px;font-weight:650;cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px}summary:after{content:'⌄';padding:0 12px;flex-shrink:0}details:not([open]) summary:after{content:'›'}
+h2{font-size:24px;margin:0;min-width:0;overflow-wrap:anywhere}.student-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px 20px;margin:16px 0 32px}.student-heading h2{flex:1 1 220px}.student-totals{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-left:auto}.student-total{display:inline-flex;align-items:center;gap:10px;border-radius:999px;padding:5px 8px 5px 14px;font-size:15px;font-weight:650;white-space:nowrap}.student-total-number{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;border-radius:999px;padding:0 6px;color:#141213;font-size:14px;font-weight:750;font-variant-numeric:tabular-nums}@media(max-width:480px){.student-heading{gap:12px}.student-heading h2{flex-basis:100%}.student-total{font-size:14px}}details{margin:24px 0}summary{padding-left:12px;font-size:22px;font-weight:650;cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px}summary:after{content:'⌄';padding:0 12px;flex-shrink:0}details:not([open]) summary:after{content:'›'}
 .subject-name{min-width:0;overflow-wrap:anywhere}.subject-counts{margin-left:auto;display:flex;gap:7px;flex-shrink:0}.status-count{width:34px;height:34px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#141213;font-size:14px;font-weight:750;font-variant-numeric:tabular-nums}
 .badge{display:inline-block;margin:22px 0 8px;padding:3px 14px;border-radius:22px;font-weight:600}ol{padding-left:25px;margin:0}li{padding:8px 0;overflow-wrap:anywhere;line-height:1.7}li span{color:#BDB8BC}
 button,a{font:inherit;color:#F6F4F1;background:#302C2D;border:1px solid #696064;padding:10px 15px;border-radius:24px;cursor:pointer;text-decoration:none}
 button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid #EACA7A;outline-offset:3px}
 #plus,#top{position:fixed;bottom:16px;z-index:10;background:#302A20;color:#EACA7A;box-shadow:0 3px 16px #0008}#plus{right:18px;width:48px;height:48px;font-size:25px;padding:0}#top{left:18px;display:none}
 #menu{position:fixed;bottom:75px;right:18px;background:#242122;padding:14px;border:1px solid #635B51;border-radius:18px;max-width:290px}#menu button,#menu a{display:block;margin:8px 0;width:100%;text-align:center}#feedback{font-size:13px;color:#EACA7A}
-</style>''' + f'<main id="results"><h2>{title}</h2>{"".join(sections) if records else "<p>No matching quizzes for these filters.</p>"}</main><button id="top" aria-label="Back to search">↑ Search</button><button id="plus" aria-label="Report actions" aria-expanded="false" aria-controls="menu">+</button><div id="menu" hidden><button id="share">Share report</button><button id="copy">Copy report</button><a download="quiz-report.pdf" href="data:application/pdf;base64,{pdf}">Download PDF</a><p id="feedback" role="status"></p></div>' + '''<script>
+</style>''' + f'<main id="results"><div class="student-heading"><h2>{title}</h2><div class="student-totals" role="group" aria-label="Totals across all subjects">{"".join(total_badges)}</div></div>{"".join(sections) if records else "<p>No matching quizzes for these filters.</p>"}</main><button id="top" aria-label="Back to search">↑ Search</button><button id="plus" aria-label="Report actions" aria-expanded="false" aria-controls="menu">+</button><div id="menu" hidden><button id="share">Share report</button><button id="copy">Copy report</button><a download="quiz-report.pdf" href="data:application/pdf;base64,{pdf}">Download PDF</a><p id="feedback" role="status"></p></div>' + '''<script>
 const text=PAYLOAD;
 const results=document.getElementById('results'), topButton=document.getElementById('top'), plus=document.getElementById('plus'), menu=document.getElementById('menu'), feedback=document.getElementById('feedback');
 results.addEventListener('scroll',()=>topButton.style.display=results.scrollTop>150?'block':'none');
