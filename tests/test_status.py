@@ -90,7 +90,7 @@ class PipelineTests(unittest.TestCase):
     def test_public_and_protected_entries(self):
         with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {'SABIS_DATA_DIR':directory, 'SABIS_STORAGE':'local'}):
             LocalStore().publish(parse_workbook(workbook(), self.roster), self.roster)
-            app = AppTest.from_file('app.py').run()
+            app = AppTest.from_string('from public_view import run\nrun()').run()
             self.assertFalse(app.exception)
             self.assertEqual(len(app.file_uploader) if hasattr(app, 'file_uploader') else len(app.get('file_uploader')), 0)
             self.assertNotIn('Demo Alpha', str(app))

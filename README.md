@@ -1,3 +1,5 @@
+> **Dos apps separadas:** `main` conserva el generador original en `app.py` para `quizzesapp.streamlit.app`. La rama `quiz-status` contiene la consulta pública nueva en `app.py` y debe desplegarse como una segunda app con otro enlace. Las instrucciones de Quiz Status que siguen corresponden a esa rama. Las credenciales de Google van en Secrets de la nueva app, no son necesarias para el generador original.
+
 # SABIS Quiz Status
 
 Primera versión Streamlit con consulta pública por Student Number, consulta protegida para profesores y administración en procesos separados. No se ha desplegado. No hay datos publicados incluidos en el repositorio.
