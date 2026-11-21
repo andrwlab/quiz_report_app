@@ -2,9 +2,15 @@ import logging
 import streamlit as st
 from storage_config import get_store
 from presentation import header, render_student
+from mobile_actions import render_actions
 
 
 def run(teacher=False):
+    reports = _run_view(teacher)
+    render_actions(reports or [])
+
+
+def _run_view(teacher=False):
     try:
         snapshot = get_store().read()
     except (ValueError, OSError) as error:
@@ -46,12 +52,15 @@ def run(teacher=False):
     status = columns[1].selectbox('Status', ['All', 'Pending', 'Low Score'])
     filtered = [r for r in relevant if (subject == 'All' or r['subject'] == subject) and (status == 'All' or r['status'] == status)]
     shown = 0
+    reports = []
     for student in sorted(candidates, key=lambda s: s['Student Name'].casefold()):
         records = [r for r in filtered if r['number'] == student['Student Number']]
         if teacher and not records:
             continue
         all_records = [r for r in relevant if r['number'] == student['Student Number']]
-        render_student(student, records, snapshot['updated_at'], all_records=all_records)
+        reports.append(render_student(student, records, snapshot['updated_at'], all_records=all_records))
         shown += 1
     if teacher and not shown:
         st.info('No matching quizzes. Select a group or change the filters.')
+
+    return reports

@@ -2,7 +2,7 @@ import io
 import os
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import pandas as pd
 from streamlit.testing.v1 import AppTest
 from data_pipeline import read_roster, parse_workbook, ValidationError
@@ -87,11 +87,39 @@ class PipelineTests(unittest.TestCase):
         self.assertIn('America/Panama', text)
         self.assertTrue(report_pdf(self.roster[0], records, '2026-11-20T19:35:00-05:00').startswith(b'%PDF'))
 
+    def test_native_results_preserve_totals_and_escape_source_text(self):
+        from presentation import render_student
+        student = {'Student Name':'<Demo Student>', 'Group':'G7'}
+        rows = [dict(number='001', subject=subject, status=status, code='<DEMO>', week='Week 12') for subject, status in [('Math','Pending'), ('Science','Pending'), ('Science','Low Score')]]
+        with patch('presentation.st.html') as html:
+            payload = render_student(student, rows[:1], '2026-11-21T10:00:00-05:00', all_records=rows)
+        markup = html.call_args.args[0]
+        self.assertIn('2 Pending quizzes across all subjects', markup)
+        self.assertIn('1 Low Score quizzes across all subjects', markup)
+        self.assertIn('&lt;Demo Student&gt;', markup)
+        self.assertIn('&lt;DEMO&gt;', markup)
+        self.assertNotIn('<iframe', markup)
+        self.assertNotIn('Science</span>', markup)
+        self.assertTrue(payload['pdf'])
+        self.assertIn('<DEMO>', payload['text'])
+
     def test_public_and_protected_entries(self):
+        # Streamlit 1.52 AppTest mocks Runtime without a v2 registry.
+        # Supply the real registry so the floating toolbar is tested on each rerun.
+        from streamlit.components.v2.component_manager import BidiComponentManager
+        manager = BidiComponentManager()
+        def runtime_factory(*args, **kwargs):
+            instance = MagicMock(*args, **kwargs)
+            instance.bidi_component_registry = manager
+            return instance
+        runtime_patch = patch('streamlit.testing.v1.app_test.MagicMock', side_effect=runtime_factory)
+        runtime_patch.start()
+        self.addCleanup(runtime_patch.stop)
         with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {'SABIS_DATA_DIR':directory, 'SABIS_STORAGE':'local'}):
             LocalStore().publish(parse_workbook(workbook(), self.roster), self.roster)
             app = AppTest.from_file('app.py').run()
             self.assertFalse(app.exception)
+            self.assertEqual(len(app.get("bidi_component")), 1)
             self.assertEqual(len(app.file_uploader) if hasattr(app, 'file_uploader') else len(app.get('file_uploader')), 0)
             self.assertNotIn('Demo Alpha', str(app))
             app.text_input[0].set_value('001')
