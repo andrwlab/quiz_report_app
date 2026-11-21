@@ -110,9 +110,9 @@ export default function({data, parentElement}) {
     overlay.setAttribute('aria-hidden', 'true');
     target.append(overlay);
     const width = target.getBoundingClientRect().width;
-    // Decreasing pixel coordinates move the highlight unambiguously right to left.
+    // Increasing pixel coordinates move the highlight left to right.
     const animation = overlay.animate(
-      [{backgroundPosition:(width * .1) + 'px 0px'}, {backgroundPosition:(-width * 1.65) + 'px 0px'}],
+      [{backgroundPosition:(-width * 1.65) + 'px 0px'}, {backgroundPosition:(width * .1) + 'px 0px'}],
       {duration, easing:'linear', fill:'both'}
     );
     const item = {overlay, animation};
