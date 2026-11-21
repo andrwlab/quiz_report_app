@@ -19,6 +19,7 @@ html,body,#root,[data-testid="stApp"],[data-testid="stAppViewContainer"],[data-t
 input, [data-baseweb="select"]>div {border-radius:32px!important;background:#272526!important;color:#F6F4F1!important}
 input {padding:1.3rem!important}
 [data-testid="stForm"] {border:0;padding:0;margin-bottom:1rem}
+[data-testid="stForm"] [data-testid="stTextInput"] [data-testid="InputInstructions"] {display:none!important}
 [data-testid="stForm"] [data-testid="stHorizontalBlock"] {display:flex!important;flex-wrap:nowrap!important;align-items:center;gap:8px!important;background:#343236;border:1px solid #555158;border-radius:999px;padding:8px 10px 8px 20px;transition:border-color .2s,box-shadow .2s}
 [data-testid="stForm"] [data-testid="stHorizontalBlock"]:focus-within {border-color:#EACA7A;box-shadow:0 0 0 2px #EACA7A22}
 [data-testid="stForm"] :is([data-testid="column"],[data-testid="stColumn"]):first-child {flex:1 1 0!important;width:0!important;min-width:0!important}
