@@ -1,3 +1,4 @@
+import logging
 import streamlit as st
 from storage_config import get_store
 from presentation import header, render_student
@@ -6,7 +7,8 @@ from presentation import header, render_student
 def run(teacher=False):
     try:
         snapshot = get_store().read()
-    except (ValueError, OSError):
+    except (ValueError, OSError) as error:
+        logging.getLogger(__name__).error('SABIS_CONNECTION_ERROR: %s', error)
         st.error('Published data is temporarily unavailable. The administrator must check the Google Sheets connection.')
         return
     header(snapshot)
