@@ -19,8 +19,8 @@ input {padding:1.3rem!important}
 [data-testid="stForm"] {border:0;padding:0;margin-bottom:1rem}
 [data-testid="stForm"] [data-testid="stHorizontalBlock"] {display:flex!important;flex-wrap:nowrap!important;align-items:center;gap:8px!important;background:#343236;border:1px solid #555158;border-radius:999px;padding:8px 10px 8px 20px;transition:border-color .2s,box-shadow .2s}
 [data-testid="stForm"] [data-testid="stHorizontalBlock"]:focus-within {border-color:#EACA7A;box-shadow:0 0 0 2px #EACA7A22}
-[data-testid="stForm"] [data-testid="column"]:first-child {flex:1 1 0!important;width:0!important;min-width:0!important}
-[data-testid="stForm"] [data-testid="column"]:last-child {flex:0 0 100px!important;width:100px!important;min-width:0!important}
+[data-testid="stForm"] :is([data-testid="column"],[data-testid="stColumn"]):first-child {flex:1 1 0!important;width:0!important;min-width:0!important}
+[data-testid="stForm"] :is([data-testid="column"],[data-testid="stColumn"]):last-child {flex:0 0 100px!important;width:100px!important;min-width:0!important}
 [data-testid="stForm"] [data-testid="stTextInput"] [data-baseweb="input"] {background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important}
 [data-testid="stForm"] input {height:48px!important;padding:0!important;background:transparent!important;border-radius:0!important;font-size:1.1rem!important}
 [data-testid="stForm"] input::placeholder {color:#C3BEC6!important;opacity:1}
@@ -33,7 +33,7 @@ button {border-radius:28px!important}
 .power {color:#EACA7A;font-style:italic;font-size:.85rem;text-align:right}
 .meta {color:#BBB7B9;font-size:.85rem;margin:8px 0 20px}
 .book {text-align:center;color:#EACA7A;margin:42px 0 32px}
-@media(max-width:480px){.book{margin:30px 0 26px}[data-testid="stForm"] [data-testid="stHorizontalBlock"]{padding:6px 7px 6px 15px}[data-testid="stForm"] [data-testid="column"]:last-child{flex-basis:80px!important;width:80px!important}[data-testid="stForm"] input{font-size:1rem!important}}
+@media(max-width:480px){.book{margin:30px 0 26px}[data-testid="stForm"] [data-testid="stHorizontalBlock"]{padding:6px 7px 6px 15px}[data-testid="stForm"] :is([data-testid="column"],[data-testid="stColumn"]):last-child{flex-basis:80px!important;width:80px!important}[data-testid="stForm"] input{font-size:1rem!important}}
 </style>'''
 
 
