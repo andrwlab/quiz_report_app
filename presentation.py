@@ -41,7 +41,9 @@ button {border-radius:28px!important}
 .power {margin-left:auto}
 .power {color:#EACA7A;font-style:italic;font-size:.85rem;text-align:right}
 .meta {color:#BBB7B9;font-size:.85rem;margin:8px 0 20px}
-.book {text-align:center;color:#EACA7A;margin:42px 0 32px}
+.book {display:flex;flex-direction:column;align-items:center;width:100%;text-align:center;color:#EACA7A;margin:42px 0 32px}
+.book > svg {display:block;flex-shrink:0}
+.stApp .book h1.search-title {width:fit-content;max-width:100%;text-align:center;margin-left:auto!important;margin-right:auto!important}
 @media(max-width:480px){.book{margin:30px 0 26px}[data-testid="stForm"] [data-testid="stHorizontalBlock"]{padding:6px 7px 6px 15px}[data-testid="stForm"] :is([data-testid="column"],[data-testid="stColumn"]):last-child{flex-basis:80px!important;width:80px!important}[data-testid="stForm"] input{font-size:1rem!important}}
 </style>'''
 
