@@ -4,7 +4,8 @@ from html import escape
 import streamlit as st
 from reports import grouped, report_text, report_pdf, publication_time
 
-PENDING_COLOR = '#EAA1CF'
+PENDING_COLOR = '#ED6D83'
+COMPLETE_COLOR = '#BEF0D5'
 GOLD = '#EACA7A'
 SUBJECT_COLORS = ['#EACA7A', '#95CFC3', '#ABA9F3', '#EBAF8F', '#A8CE8B', '#92BEE8']
 CSS = '''
@@ -49,6 +50,7 @@ def header(snapshot):
 
 def render_student(student, records, updated_at, *, all_records=None):
     total_records = records if all_records is None else all_records
+    all_current = not any(record['status'] in ('Pending', 'Low Score') for record in total_records)
     total_badges = []
     for status, tone in [('Pending', PENDING_COLOR), ('Low Score', GOLD)]:
         total = sum(record['status'] == status for record in total_records)
@@ -77,12 +79,21 @@ def render_student(student, records, updated_at, *, all_records=None):
                 body.append(f'<li><strong>{escape(record["code"])}</strong> <span>— {escape(record["week"])}</span></li>')
             body.append('</ol>')
         sections.append(f'<details open><summary style="border-left:4px solid {color}"><span class="subject-name">{escape(subject)}</span><span class="subject-counts">{"".join(counts)}</span></summary>{"".join(body)}</details>')
+    completion = (
+        '<div class="quiz-all-current" role="status">'
+        '<svg class="completion-icon" viewBox="0 0 100 100" role="img" aria-label="All caught up">'
+        f'<circle class="completion-disc" cx="50" cy="50" r="45" fill="{COMPLETE_COLOR}"/>'
+        '<path class="completion-check" d="M29 51l14 14 29-30" fill="none" stroke="#FFFFFF" '
+        'stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>'
+        '</svg><p class="completion-title">You’re all caught up!</p>'
+        '<p class="completion-caption">No Pending or Low Score quizzes.</p></div>'
+    )
     title = escape(student['Student Name'] + ' · ' + student['Group'])
     st.html(
         '<style>' + RESULT_STYLES + '</style>'
         + f'<section class="quiz-results"><div class="student-heading"><h2>{title}</h2>'
         + f'<div class="student-totals" role="group" aria-label="Totals across all subjects">{"".join(total_badges)}</div></div>'
-        + (''.join(sections) if records else '<p>No matching quizzes for these filters.</p>')
+        + (completion if all_current else ''.join(sections) if records else '<p>No matching quizzes for these filters.</p>')
         + '</section>'
     )
     return {
@@ -101,6 +112,15 @@ RESULT_STYLES = """
 .quiz-results .student-totals{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-left:auto}
 .quiz-results .student-total{display:inline-flex;align-items:center;gap:10px;border-radius:999px;padding:5px 8px 5px 14px;font-size:15px;font-weight:650;white-space:nowrap}
 .quiz-results .student-total-number{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;border-radius:999px;padding:0 6px;color:#141213;font-size:14px;font-weight:750;font-variant-numeric:tabular-nums}
+.quiz-results .quiz-all-current{min-height:250px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px 16px}
+.quiz-results .completion-icon{width:108px;height:108px;overflow:visible}
+.quiz-results .completion-disc{transform-origin:50px 50px;animation:sabis-complete-circle .45s ease-out both}
+.quiz-results .completion-check{stroke-dasharray:66;stroke-dashoffset:66;filter:drop-shadow(0 1px 1px #28584035);animation:sabis-complete-check .5s .25s ease-out both}
+.quiz-results .completion-title{font-size:22px;font-weight:650;margin:22px 0 6px}
+.quiz-results .completion-caption{font-size:15px;color:#BDB8BC;margin:0}
+@keyframes sabis-complete-circle{from{opacity:0;transform:scale(.75)}to{opacity:1;transform:scale(1)}}
+@keyframes sabis-complete-check{to{stroke-dashoffset:0}}
+@media(prefers-reduced-motion:reduce){.quiz-results .completion-disc,.quiz-results .completion-check{animation:none;stroke-dashoffset:0}}
 .quiz-results details{margin:24px 0}
 .quiz-results summary{padding-left:12px;font-size:22px;font-weight:650;cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px}
 .quiz-results summary::-webkit-details-marker{display:none}

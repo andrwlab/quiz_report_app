@@ -103,6 +103,27 @@ class PipelineTests(unittest.TestCase):
         self.assertTrue(payload['pdf'])
         self.assertIn('<DEMO>', payload['text'])
 
+    def test_completion_uses_all_subjects_not_filtered_results(self):
+        from presentation import render_student
+        student = {'Student Name':'Demo Student', 'Group':'G7'}
+        pending = [dict(number='001', subject='Math', status='Pending', code='DEMO', week='Week 12')]
+        with patch('presentation.st.html') as html:
+            render_student(student, [], '2026-11-21T10:00:00-05:00', all_records=pending)
+        self.assertNotIn('class="quiz-all-current"', html.call_args.args[0])
+        self.assertIn('No matching quizzes for these filters.', html.call_args.args[0])
+        self.assertIn('background:#ED6D8320', html.call_args.args[0])
+        low = [{**pending[0], 'status':'Low Score'}]
+        with patch('presentation.st.html') as html:
+            render_student(student, [], '2026-11-21T10:00:00-05:00', all_records=low)
+        self.assertNotIn('class="quiz-all-current"', html.call_args.args[0])
+        with patch('presentation.st.html') as html:
+            render_student(student, [], '2026-11-21T10:00:00-05:00', all_records=[])
+        markup = html.call_args.args[0]
+        self.assertIn('class="quiz-all-current"', markup)
+        self.assertIn('fill="#BEF0D5"', markup)
+        self.assertIn('stroke="#FFFFFF"', markup)
+        self.assertNotIn('No matching quizzes for these filters.', markup)
+
     def test_public_and_protected_entries(self):
         # Streamlit 1.52 AppTest mocks Runtime without a v2 registry.
         # Supply the real registry so the floating toolbar is tested on each rerun.
