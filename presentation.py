@@ -81,18 +81,18 @@ def render_student(student, records, updated_at, *, all_records=None):
         sections.append(f'<details open><summary style="border-left:4px solid {color}"><span class="subject-name">{escape(subject)}</span><span class="subject-counts">{"".join(counts)}</span></summary>{"".join(body)}</details>')
     completion = (
         '<div class="quiz-all-current" role="status">'
-        '<svg class="completion-icon" viewBox="0 0 100 100" role="img" aria-label="All caught up">'
+        '<svg class="completion-icon" viewBox="0 0 100 100" role="img" aria-label="Estudiante al día">'
         f'<circle class="completion-disc" cx="50" cy="50" r="45" fill="{COMPLETE_COLOR}"/>'
         '<path class="completion-check" d="M29 51l14 14 29-30" fill="none" stroke="#FFFFFF" '
         'stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>'
-        '</svg><p class="completion-title">You’re all caught up!</p>'
-        '<p class="completion-caption">No Pending or Low Score quizzes.</p></div>'
+        '</svg><p class="completion-title">Este estudiante se encuentra al día</p></div>'
     )
     title = escape(student['Student Name'] + ' · ' + student['Group'])
     st.html(
         '<style>' + RESULT_STYLES + '</style>'
         + f'<section class="quiz-results"><div class="student-heading"><h2>{title}</h2>'
-        + f'<div class="student-totals" role="group" aria-label="Totals across all subjects">{"".join(total_badges)}</div></div>'
+        + (f'<div class="student-totals" role="group" aria-label="Totals across all subjects">{"".join(total_badges)}</div>' if not all_current else '')
+        + '</div>'
         + (completion if all_current else ''.join(sections) if records else '<p>No matching quizzes for these filters.</p>')
         + '</section>'
     )
