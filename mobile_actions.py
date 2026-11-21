@@ -109,8 +109,10 @@ export default function({data, parentElement}) {
     overlay.textContent = target.textContent;
     overlay.setAttribute('aria-hidden', 'true');
     target.append(overlay);
+    const width = target.getBoundingClientRect().width;
+    // Decreasing pixel coordinates move the highlight unambiguously right to left.
     const animation = overlay.animate(
-      [{backgroundPosition:'-100% 0'}, {backgroundPosition:'150% 0'}],
+      [{backgroundPosition:(width * .1) + 'px 0px'}, {backgroundPosition:(-width * 1.65) + 'px 0px'}],
       {duration, easing:'linear', fill:'both'}
     );
     const item = {overlay, animation};
@@ -123,9 +125,9 @@ export default function({data, parentElement}) {
     window.__quizShineToken = shineToken;
     if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       shineTimer = setTimeout(async () => {
-        const finished = await playGlint(document.querySelector('[data-quiz-shine="title"]'), 450);
-        if (finished) await playGlint(document.querySelector('[data-quiz-shine="credit"]'), 300);
-      }, 500);
+        const finished = await playGlint(document.querySelector('[data-quiz-shine="title"]'), 800);
+        if (finished) await playGlint(document.querySelector('[data-quiz-shine="credit"]'), 600);
+      }, 1000);
     }
   }
 
