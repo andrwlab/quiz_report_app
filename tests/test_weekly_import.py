@@ -44,6 +44,29 @@ class WeeklyImportTests(unittest.TestCase):
         self.assertEqual(review.require_valid(),[])
         self.assertEqual(review.quiz_rows,1)
 
+    def test_scores_and_parentheses_separate_people_without_numeric_students(self):
+        for text in ['Demo 69.4% Other 40.6%', 'Demo (0%) Other (0%)', 'Demo 69,4% Other 40,6%', 'Demo. Other']:
+            review=review_weekly_workbook(workbook(text,None),ROSTER)
+            self.assertFalse(review.issues,text)
+            self.assertEqual([r['number'] for r in review.records],['001','002'])
+
+    def test_multiword_given_and_family_initials_are_unique_aliases(self):
+        roster=[{'Student Number':'001','Student Name':'Alpha Beta, Demo Other','Group':'G7A'}]
+        for label in ['Demo AB','Demo O']:
+            review=review_weekly_workbook(workbook(label,None),roster)
+            self.assertFalse(review.issues)
+            self.assertEqual(review.records[0]['number'],'001')
+
+    def test_full_name_word_order_is_allowed_only_if_unique(self):
+        roster=[{'Student Number':'001','Student Name':'Alpha Beta Demo','Group':'G7A'}]
+        review=review_weekly_workbook(workbook('Demo Alpha Beta',None),roster)
+        self.assertFalse(review.issues)
+        roster.append({'Student Number':'002','Student Name':'Beta Alpha Demo','Group':'G7A'})
+        with self.assertRaises(ValidationError):review_weekly_workbook(workbook('Demo Alpha Beta',None),roster).require_valid()
+
+    def test_typos_are_never_fuzzy_matched(self):
+        with self.assertRaises(ValidationError):review_weekly_workbook(workbook('Dmmo',None),ROSTER).require_valid()
+
     def test_bad_alias_cannot_assign_another_grade(self):
         alias=[{'Grade':'G8','Subject':'','Report Name':'Unknown','Student Number':'001'}]
         with self.assertRaises(ValidationError):review_weekly_workbook(workbook('Unknown'),ROSTER,alias)

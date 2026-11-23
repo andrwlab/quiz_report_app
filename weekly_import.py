@@ -51,18 +51,23 @@ def student_index(roster):
             raise ValidationError('An official student name cannot be indexed.')
         first, family = given.split()[0], surname.split()[0]
         keys.update(name_key(key) for key in [given+' '+surname, given, first, surname, family, first+' '+family[0], first+' '+family])
+        keys.add(name_key(first+' '+''.join(token[0] for token in surname.split())))
+        if len(given.split()) > 1:
+            keys.add(name_key(first+' '+''.join(token[0] for token in given.split()[1:])))
         for key in keys:
             index[grade_key(student['Group']), key].add(number)
     return index
 
 
 def label_parts(cell):
-    """Only documented separators and score annotations; no fuzzy correction."""
-    for token in re.split(r'[,;\n]+|\s+(?:and|y)\s+', str(cell), flags=re.IGNORECASE):
-        token = re.sub(r'\(\s*\d*(?:\.\d+)?\s*%?\s*\)', '', token)
+    """Scores terminate labels; they never become student identities."""
+    text = re.sub(r'(?<=\d),(?=\d)', '.', str(cell))
+    text = re.sub(r'\(\s*\d*(?:\.\d+)?\s*%?\s*\)', ';', text)
+    text = re.sub(r'\d+(?:\.\d+)?\s*%', ';', text)
+    for token in re.split(r'[,;\n]+|\s+(?:and|y)\s+', text, flags=re.IGNORECASE):
         token = re.sub(r'\s+incomplete\s*$', '', token, flags=re.IGNORECASE)
-        token = re.sub(r'\s+\d+(?:\.\d+)?\s*%?\s*$', '', token).strip()
-        if token:
+        token = re.sub(r'\s+\d+(?:\.\d+)?\s*$', '', token).strip()
+        if token and not re.fullmatch(r'\d+(?:\.\d+)?', token):
             yield token
 
 
@@ -72,6 +77,11 @@ def review_weekly_workbook(content, roster, aliases=()):
     if len(by_number) != sum(bool(s['Student Number']) for s in roster):
         raise ValidationError('Official Student Numbers must be unique.')
     index = student_index(roster)
+    full_tokens = defaultdict(set)
+    for student in roster:
+        if student['Student Number']:
+            tokens = tuple(sorted(name_key(student['Student Name'].replace(',', ' ')).split()))
+            full_tokens[grade_key(student['Group']), tokens].add(student['Student Number'])
     overrides = {}
     for row in aliases:
         if not any(str(v).strip() for v in row.values()):
@@ -132,9 +142,19 @@ def review_weekly_workbook(content, roster, aliases=()):
                     cell = cells[col]
                     if cell is None or not str(cell).strip():
                         continue
-                    for label in label_parts(cell):
+                    labels = []
+                    for raw_label in label_parts(cell):
+                        parts = raw_label.split('. ')
+                        if len(parts) > 1 and all(len(index.get((grade, name_key(part)), set())) == 1 for part in parts):
+                            labels.extend(parts)
+                        else:
+                            labels.append(raw_label)
+                    for label in labels:
                         candidate = overrides.get((grade, name_key(subject), name_key(label))) or overrides.get((grade, '', name_key(label)))
                         candidates = {candidate} if candidate else index.get((grade, name_key(label)), set())
+                        if not candidates and len(label.split()) > 1:
+                            candidates = full_tokens.get((grade, tuple(sorted(name_key(label).split()))), set())
+
                         if len(candidates) != 1:
                             issue(label, 'Ambiguous student name' if candidates else 'No exact student identity', candidates)
                             continue
