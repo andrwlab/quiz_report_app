@@ -27,7 +27,7 @@ class DriveSourceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             store=self.store(directory)
             with patch.object(store,'_single_file',return_value=FILE),patch.object(store,'_tables',return_value=(PROPS,TABLES,ROSTER,[],{},[])),patch.object(store,'_request') as request,patch('drive_source.review_weekly_workbook') as review:
-                request.return_value.content=b'demo';review.return_value.require_valid.side_effect=ValidationError('Needs identity review')
+                request.return_value.content=b'demo';review.return_value.publication_records.side_effect=ValidationError('Needs identity review')
                 with self.assertRaises(ValidationError):store._fetch()
                 self.assertEqual(request.call_count,1)
                 self.assertEqual(request.call_args.args[0],'GET')
@@ -36,7 +36,7 @@ class DriveSourceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             store=self.store(directory)
             with patch.object(store,'_single_file',return_value=FILE),patch.object(store,'_tables',return_value=(PROPS,TABLES,ROSTER,[],{},[])),patch.object(store,'_request') as request,patch('drive_source.review_weekly_workbook') as review:
-                request.return_value.content=b'demo';review.return_value.require_valid.return_value=[];review.return_value.quiz_rows=1
+                request.return_value.content=b'demo';review.return_value.publication_records.return_value=[];review.return_value.quiz_rows=1;review.return_value.review_scope.return_value=dict(review_count=0,review_students=[],review_all=False)
                 records,roster=store._fetch()
                 self.assertEqual(records,[])
                 posts=[call for call in request.call_args_list if call.args[0]=='POST']
@@ -53,7 +53,7 @@ class DriveSourceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             store=self.store(directory)
             with patch.object(store,'_single_file',side_effect=[FILE,{**FILE,'id':'new-file'}]),patch.object(store,'_tables',return_value=(PROPS,TABLES,ROSTER,[],{},[])),patch.object(store,'_request') as request,patch('drive_source.review_weekly_workbook') as review:
-                request.return_value.content=b'demo';review.return_value.require_valid.return_value=[]
+                request.return_value.content=b'demo';review.return_value.publication_records.return_value=[]
                 with self.assertRaises(ValidationError):store._fetch()
                 self.assertEqual(request.call_count,1)
 

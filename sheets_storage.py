@@ -16,7 +16,7 @@ class SheetsConnectionError(OSError):
     pass
 
 
-def source_snapshot(student_rows, quiz_rows):
+def source_snapshot(student_rows, quiz_rows, *, allow_empty=False):
     """Validate a complete source read. Numeric weeks become Week N, codes stay literal."""
     def table(rows, columns, title):
         if not rows or rows[0] != columns:
@@ -34,7 +34,7 @@ def source_snapshot(student_rows, quiz_rows):
     csv_bytes = pd.DataFrame(students, columns=['Student Number', 'Student Name', 'Group']).to_csv(index=False).encode()
     roster = read_roster(csv_bytes, allow_missing_numbers=True)
     quizzes = table(quiz_rows, ['Student Number', 'Student Name', 'Group', 'Subject', 'Quiz Code', 'Week', 'Status'], 'Quizzes')
-    if not quizzes:
+    if not quizzes and not allow_empty:
         raise ValidationError('Quizzes is empty; refusing to replace published data with an unfinished import.')
     by_identity = {(normalized(s['Student Name']), normalized(s['Group'])): s for s in roster}
     records, seen, issues = [], set(), []
@@ -64,6 +64,25 @@ def source_snapshot(student_rows, quiz_rows):
     return records, roster
 
 
+def publication_metadata(rows):
+    values = {r[0]:r[1] if len(r)>1 else '' for r in rows[1:] if r}
+    if not values or values.get('Status') != 'Published':
+        return {}
+    try:
+        count = int(values.get('Review count', '0'))
+        students = json.loads(values.get('Review students', '[]'))
+        if count < 0 or not isinstance(students,list) or any(not isinstance(n,str) for n in students):
+            raise ValueError()
+        result = dict(review_count=count, review_students=students, review_all=values.get('Review all')=='true')
+        if values.get('Updated At'):
+            from datetime import datetime
+            datetime.fromisoformat(values['Updated At'])
+            result['updated_at'] = values['Updated At']
+        return result
+    except (ValueError, TypeError):
+        raise ValidationError('Publication review metadata is invalid.') from None
+
+
 class GoogleSheetsStore:
     OAUTH_SCOPES = ('https://www.googleapis.com/auth/spreadsheets.readonly',)
 
@@ -78,6 +97,7 @@ class GoogleSheetsStore:
         self._checked_at = None
         self._cached = None
         self._lock = threading.Lock()
+        self._publication_meta = {}
 
     def _session(self):
         if self.session is None:
@@ -111,7 +131,7 @@ class GoogleSheetsStore:
         try:
             response = self._session().get(
                 f'https://sheets.googleapis.com/v4/spreadsheets/{self.spreadsheet_id}',
-                params=[('ranges', "'Students'!A1:C20000"), ('ranges', "'Quizzes'!A1:G100000"), ('includeGridData', 'true'), ('fields', fields)],
+                params=[('ranges', "'Students'!A1:C20000"), ('ranges', "'Quizzes'!A1:G100000"), ('ranges', "'Publication'!A1:B20"), ('includeGridData', 'true'), ('fields', fields)],
                 timeout=20)
             if response.status_code != 200:
                 raise SheetsConnectionError(f'Google Sheets returned HTTP {response.status_code}. Check Sheets API and file sharing permissions.')
@@ -134,7 +154,8 @@ class GoogleSheetsStore:
                     rows.append(values)
             # Ignore empty trailing cells when Google returns a shorter header.
             result[sheet['properties']['title']] = rows
-        return source_snapshot(result.get('Students', []), result.get('Quizzes', []))
+        self._publication_meta = publication_metadata(result.get('Publication', []))
+        return source_snapshot(result.get('Students', []), result.get('Quizzes', []), allow_empty=bool(self._publication_meta))
 
     def read(self):
         with self._lock:
@@ -144,11 +165,12 @@ class GoogleSheetsStore:
             previous = self.local.read()
             try:
                 records, roster = self._fetch()
-                fingerprint = hashlib.sha256(json.dumps([records, roster], sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+                metadata = self._publication_meta
+                fingerprint = hashlib.sha256(json.dumps([records, roster, metadata], sort_keys=True, ensure_ascii=False).encode()).hexdigest()
                 previous_fingerprint = None
                 if previous:
-                    previous_fingerprint = hashlib.sha256(json.dumps([previous['records'], previous['roster']], sort_keys=True, ensure_ascii=False).encode()).hexdigest()
-                snapshot = previous if fingerprint == previous_fingerprint else self.local.publish(records, roster)
+                    previous_fingerprint = hashlib.sha256(json.dumps([previous['records'], previous['roster'], {k:previous[k] for k in metadata if k in previous}], sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+                snapshot = previous if fingerprint == previous_fingerprint else self.local.publish(records, roster, **metadata)
             except (SheetsConnectionError, ValidationError, OSError) as error:
                 if not previous:
                     raise SheetsConnectionError(str(error)) from None

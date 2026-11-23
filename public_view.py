@@ -56,10 +56,11 @@ def _run_view(teacher=False):
     reports = []
     for student in sorted(candidates, key=lambda s: s['Student Name'].casefold()):
         records = [r for r in filtered if r['number'] == student['Student Number']]
-        if teacher and not records:
+        pending_review = snapshot.get('review_count',0) > 0 and (snapshot.get('review_all',False) or student['Student Number'] in snapshot.get('review_students',[]))
+        if teacher and not records and not pending_review:
             continue
         all_records = [r for r in relevant if r['number'] == student['Student Number']]
-        reports.append(render_student(student, records, snapshot['updated_at'], all_records=all_records))
+        reports.append(render_student(student, records, snapshot['updated_at'], all_records=all_records, pending_review=pending_review))
         shown += 1
     if teacher and not shown:
         st.info('No matching quizzes. Select a group or change the filters.')

@@ -26,6 +26,27 @@ class WorkbookReview:
     ignored_sheets: list = field(default_factory=list)
     quiz_rows: int = 0
 
+    def publication_records(self):
+        # A damaged/unrecognizable workbook cannot replace a whole term.
+        if not self.quiz_rows or any(i['Reason'] == 'Term in sheet title disagrees with the uploaded filename' for i in self.issues):
+            self.require_valid()
+        conflicting = {(i['Week'], i['Subject'], i['Quiz Code'], n.strip())
+                       for i in self.issues if i['Reason'] == 'Conflicting states'
+                       for n in i['Candidate Numbers'].split(',') if n.strip()}
+        return [r for r in self.records if (r['week'],r['subject'],r['code'],r['number']) not in conflicting]
+
+    def review_scope(self, roster):
+        numbers, all_students = set(), False
+        for issue in self.issues:
+            candidates = {n.strip() for n in issue['Candidate Numbers'].split(',') if n.strip()}
+            if candidates:
+                numbers.update(candidates)
+            elif grade_key(issue['Grade']):
+                numbers.update(s['Student Number'] for s in roster if grade_key(s['Group']) == grade_key(issue['Grade']))
+            else:
+                all_students = True
+        return dict(review_count=len(self.issues), review_students=sorted(numbers), review_all=all_students)
+
     def require_valid(self):
         if self.issues:
             locations = ', '.join(f"{issue['Week']} row {issue['Row']}" for issue in self.issues[:4])
@@ -103,11 +124,11 @@ def review_weekly_workbook(content, roster, aliases=(), corrections=(), source_t
         action = str(row.get('Action', 'Map students')).strip()
         ids = [value.strip() for value in numbers.split(',') if value.strip()]
         key = (term.upper(), week, name_key(subject), grade_key(grade), code, status, ' '.join(text.split()))
-        if not key[3] or not re.fullmatch(r'T\d+', term.upper()) or not re.fullmatch(r'Week\s+\d+', week) or not subject or not code or status not in ('Pending','Low Score') or not text or action not in ('Map students','Ignore note') or (action == 'Map students' and not ids) or (action == 'Ignore note' and ids) or len(set(ids)) != len(ids) or key in cell_corrections:
+        if not key[3] or not re.fullmatch(r'T\d+', term.upper()) or not re.fullmatch(r'Week\s+\d+', week) or not subject or not code or status not in ('Pending','Low Score') or not text or action not in ('Map students','Map students with review','Ignore note') or (action.startswith('Map students') and not ids) or (action == 'Ignore note' and ids) or len(set(ids)) != len(ids) or key in cell_corrections:
             raise ValidationError('A cell correction is invalid or duplicated.')
         if any(number not in by_number or grade_key(by_number[number]['Group']) != key[3] for number in ids):
             raise ValidationError('A cell correction references an unknown student or another grade.')
-        cell_corrections[key] = ids
+        cell_corrections[key] = (ids, action)
     book = load_workbook(BytesIO(content), read_only=True, data_only=True)
     formulas = load_workbook(BytesIO(content), read_only=True, data_only=False)
     seen = {}
@@ -135,6 +156,8 @@ def review_weekly_workbook(content, roster, aliases=(), corrections=(), source_t
                 if name_key(b) == 'grade' and name_key(c) == 'quiz #':
                     if name_key(cells[7] or '') not in ('no attempts', 'pending') or name_key(cells[8] or '') not in ('low scores', 'low score'):
                         issue('', 'Unexpected Pending/Low Score column headings')
+                        subject, grade = None, None
+                        continue
                     subject = str(rows[index_row-1][0] or '').strip() if index_row else ''
                     grade = None
                     if not subject:
@@ -165,9 +188,14 @@ def review_weekly_workbook(content, roster, aliases=(), corrections=(), source_t
                     if cell is None or not str(cell).strip():
                         continue
                     cell_key = (term, week, name_key(subject), grade, c, status, ' '.join(str(cell).strip().split()))
-                    direct_numbers = cell_corrections.get(cell_key)
-                    if direct_numbers is not None:
+                    correction = cell_corrections.get(cell_key)
+                    if correction is not None:
+                        direct_numbers, action = correction
                         resolved = [(number, str(cell)) for number in direct_numbers]
+                        if action == 'Map students with review':
+                            ambiguous = [label for label in label_parts(cell) if len(index.get((grade,name_key(label)),set())) > 1]
+                            candidates = set().union(*(index[(grade,name_key(label))] for label in ambiguous)) if ambiguous else set()
+                            issue(', '.join(ambiguous), 'Source names omitted by administrator; pending review', candidates)
                     else:
                         labels = []
                         for raw_label in label_parts(cell):

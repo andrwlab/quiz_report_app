@@ -7,7 +7,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from data_pipeline import ValidationError, read_roster
-from sheets_storage import GoogleSheetsStore, SheetsConnectionError, source_snapshot
+from sheets_storage import GoogleSheetsStore, SheetsConnectionError, source_snapshot, publication_metadata
 from weekly_import import review_weekly_workbook
 import pandas as pd
 
@@ -63,7 +63,7 @@ class DriveWorkbookStore(GoogleSheetsStore):
         if not all(name in properties for name in names):
             raise ValidationError('The data Sheet requires Students, Aliases, Quizzes and Publication tabs.')
         ranges=["'Students'!A1:C20000","'Aliases'!A1:D20000","'Quizzes'!A1:G100000","'Publication'!A1:B20"]
-        for title, bounds in [('Roster Import','A1:C20000'),('Cell Corrections','A1:I20000')]:
+        for title, bounds in [('Roster Import','A1:C20000'),('Cell Corrections','A1:I20000'),('Import Review','A1:J20000')]:
             if title in properties:
                 names.append(title)
                 ranges.append(f"'{title}'!{bounds}")
@@ -92,6 +92,7 @@ class DriveWorkbookStore(GoogleSheetsStore):
 
     def _published(self, tables, roster, publication):
         self.publication_time=publication.get('Updated At') or None
+        self._publication_meta=publication_metadata(tables.get('Publication',[]))
         if tables['Quizzes']==[QUIZ_HEADERS] and publication.get('Status')=='Published' and publication.get('Source fingerprint'):
             active_rows=tables['Students']
             active_roster=read_roster(pd.DataFrame([row+['']*(3-len(row)) for row in active_rows[1:] if any(row)],columns=active_rows[0]).to_csv(index=False).encode())
@@ -102,7 +103,7 @@ class DriveWorkbookStore(GoogleSheetsStore):
         # Complete source validation occurs before any write.
         file=self._single_file()
         properties,tables,roster,aliases,publication,corrections=self._tables()
-        fingerprint=digest([file['id'],file['md5Checksum'],roster,aliases,corrections])
+        fingerprint=digest(['partial-review-v1',file['id'],file['md5Checksum'],roster,aliases,corrections])
         if publication.get('Source fingerprint')==fingerprint:
             return self._published(tables,roster,publication)
         content=self._request('GET',f"https://www.googleapis.com/drive/v3/files/{file['id']}",params={'alt':'media','supportsAllDrives':'true'}).content
@@ -111,18 +112,24 @@ class DriveWorkbookStore(GoogleSheetsStore):
         term_match=re.search(r'(?:^|[-_ ])(T\d+)(?:\.|$)',file['name'],re.IGNORECASE)
         source_term=term_match.group(1).upper() if term_match else None
         review=review_weekly_workbook(content,roster,aliases,corrections,source_term=source_term)
-        records=review.require_valid()
+        records=review.publication_records()
+        review_metadata=review.review_scope(roster)
         # Protect against a teacher replacing the file or roster during validation.
         latest=self._single_file()
         _,_,latest_roster,latest_aliases,_,latest_corrections=self._tables()
-        if digest([latest['id'],latest['md5Checksum'],latest_roster,latest_aliases,latest_corrections])!=fingerprint:
+        if digest(['partial-review-v1',latest['id'],latest['md5Checksum'],latest_roster,latest_aliases,latest_corrections])!=fingerprint:
             raise ValidationError('Source identities or file changed during import. Waiting for a stable version.')
         updated_at=datetime.now(ZoneInfo('America/Panama')).isoformat()
         quiz_rows=[QUIZ_HEADERS]+[[r['number'],r['name'],r['group'],r['subject'],r['code'],r['week'],r['status']] for r in records]
-        publication_rows=[['Key','Value'],['Status','Published'],['Updated At',updated_at],['Time Zone','America/Panama'],['Source fingerprint',fingerprint],['Source File',file['name']],['Source quiz rows',str(review.quiz_rows)]]
+        publication_rows=[['Key','Value'],['Status','Published'],['Updated At',updated_at],['Time Zone','America/Panama'],['Source fingerprint',fingerprint],['Source File',file['name']],['Source quiz rows',str(review.quiz_rows)],['Review count',str(review_metadata['review_count'])],['Review students',json.dumps(review_metadata['review_students'])],['Review all',str(review_metadata['review_all']).lower()]]
         requests=[]
         roster_rows=[['Student Number','Student Name','Group']]+[[s['Student Number'],s['Student Name'],s['Group']] for s in roster]
-        for title,rows in [('Students',roster_rows),('Quizzes',quiz_rows),('Publication',publication_rows)]:
+        outputs=[('Students',roster_rows),('Quizzes',quiz_rows),('Publication',publication_rows)]
+        if 'Import Review' in properties:
+            review_rows=[['Grade','Report Name','Occurrences','Subjects','Weeks','Candidate Numbers','Reason','Source locations','Proposed resolution','Action needed']]
+            review_rows.extend([[i['Grade'],i['Report Name'],'1',i['Subject'],i['Week'],i['Candidate Numbers'],i['Reason'],f"{i['Week']} row {i['Row']}",'', 'Pending review'] for i in review.issues])
+            outputs.append(('Import Review',review_rows))
+        for title,rows in outputs:
             prop=properties[title];grid=prop['gridProperties'];width=len(rows[0]);height=max(grid['rowCount'],len(rows))
             if height>grid['rowCount']:
                 requests.append({'updateSheetProperties':{'properties':{'sheetId':prop['sheetId'],'gridProperties':{'rowCount':height}},'fields':'gridProperties.rowCount'}})
@@ -131,6 +138,7 @@ class DriveWorkbookStore(GoogleSheetsStore):
         # One atomic Sheets batch: an error keeps the previous published version intact.
         self._request('POST',f'https://sheets.googleapis.com/v4/spreadsheets/{self.spreadsheet_id}:batchUpdate',json={'requests':requests})
         self.publication_time=updated_at
+        self._publication_meta={**review_metadata,'updated_at':updated_at}
         return records,roster
 
     def read(self):
@@ -140,7 +148,7 @@ class DriveWorkbookStore(GoogleSheetsStore):
             # After a cloud restart the durable Sheet still contains the last valid version.
             _,tables,roster,_,publication,_=self._tables()
             records,roster=self._published(tables,roster,publication)
-            snapshot={**self.local.publish(records,roster),'source_warning':True}
+            snapshot={**self.local.publish(records,roster,**self._publication_meta),'source_warning':True}
             self._cached=snapshot
             self._checked_at=time.monotonic()
         if self.publication_time:

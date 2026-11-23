@@ -15,8 +15,9 @@ class LocalStore:
         path = self.directory / 'published.json'
         return json.loads(path.read_text()) if path.exists() else None
 
-    def publish(self, records, roster):
+    def publish(self, records, roster, **metadata):
         snapshot = dict(version=1, updated_at=datetime.now(ZoneInfo('America/Panama')).isoformat(), records=records, roster=roster)
+        snapshot.update(metadata)
         self.directory.mkdir(parents=True, exist_ok=True, mode=0o700)
         descriptor, name = tempfile.mkstemp(dir=self.directory, suffix='.tmp')
         try:

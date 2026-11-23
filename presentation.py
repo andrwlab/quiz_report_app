@@ -41,6 +41,7 @@ button {border-radius:28px!important}
 .power {margin-left:auto}
 .power {color:#EACA7A;font-style:italic;font-size:.85rem;text-align:right}
 .meta {color:#BBB7B9;font-size:.85rem;margin:8px 0 20px}
+.publication-review {color:#ED6D83;font-weight:600;margin-top:8px}
 .book {display:flex;flex-direction:column;align-items:center;width:100%;text-align:center;color:#EACA7A;margin:42px 0 32px}
 .book > svg {display:block;flex-shrink:0}
 .stApp .book h1.search-title {width:fit-content;max-width:100%;text-align:center;margin-left:auto!important;margin-right:auto!important}
@@ -52,13 +53,15 @@ def header(snapshot):
     st.markdown(CSS, unsafe_allow_html=True)
     st.markdown('<div class="brand"><strong>Quiz Status</strong><span class="power quiz-shine-host" data-quiz-shine="credit">Powered by The Mister</span></div>', unsafe_allow_html=True)
     updated = publication_time(snapshot['updated_at']) + ' · America/Panama' if snapshot else 'Not published yet'
-    st.markdown(f'<div class="meta">Data last updated&nbsp; | &nbsp;{escape(updated)}</div>', unsafe_allow_html=True)
+    review = ('<div class="publication-review" role="status">Pending review</div>'
+              if snapshot and snapshot.get('review_count', 0) else '')
+    st.markdown(f'<div class="meta">Data last updated&nbsp; | &nbsp;{escape(updated)}{review}</div>', unsafe_allow_html=True)
     st.markdown('''<div class="book"><svg width="54" height="44" viewBox="0 0 80 64" fill="none" stroke="currentColor" stroke-width="4" aria-label="Open book" role="img"><path d="M40 13Q22 0 4 12V57Q22 46 40 59Q58 46 76 57V12Q58 0 40 13V59"/></svg><h1 class="search-title quiz-shine-host" data-quiz-shine="title">Quiz Status</h1></div>''', unsafe_allow_html=True)
 
 
-def render_student(student, records, updated_at, *, all_records=None):
+def render_student(student, records, updated_at, *, all_records=None, pending_review=False):
     total_records = records if all_records is None else all_records
-    all_current = not any(record['status'] in ('Pending', 'Low Score') for record in total_records)
+    all_current = not pending_review and not any(record['status'] in ('Pending', 'Low Score') for record in total_records)
     total_badges = []
     for status, tone in [('Pending', PENDING_COLOR), ('Low Score', GOLD)]:
         total = sum(record['status'] == status for record in total_records)
@@ -95,13 +98,15 @@ def render_student(student, records, updated_at, *, all_records=None):
         'stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>'
         '</svg><p class="completion-title">This student is up to date</p></div>'
     )
+    review_message = '<p class="student-review" role="status">Data pending review</p>' if pending_review else ''
     title = escape(student['Student Name'] + ' · ' + student['Group'])
     st.html(
         '<style>' + RESULT_STYLES + '</style>'
         + f'<section class="quiz-results"><div class="student-heading"><h2>{title}</h2>'
-        + (f'<div class="student-totals" role="group" aria-label="Totals across all subjects">{"".join(total_badges)}</div>' if not all_current else '')
+        + (f'<div class="student-totals" role="group" aria-label="Totals across all subjects">{"".join(total_badges)}</div>' if not all_current and any(r['status'] in ('Pending','Low Score') for r in total_records) else '')
         + '</div>'
-        + (completion if all_current else ''.join(sections) if records else '<p>No matching quizzes for these filters.</p>')
+        + review_message
+        + (completion if all_current else ''.join(sections) if records else '' if pending_review else '<p>No matching quizzes for these filters.</p>')
         + '</section>'
     )
     return {
@@ -121,6 +126,7 @@ RESULT_STYLES = """
 .quiz-results .student-total{display:inline-flex;align-items:center;gap:10px;border-radius:999px;padding:5px 8px 5px 14px;font-size:15px;font-weight:650;white-space:nowrap}
 .quiz-results .student-total-number{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;border-radius:999px;padding:0 6px;color:#141213;font-size:14px;font-weight:750;font-variant-numeric:tabular-nums}
 .quiz-results .quiz-all-current{min-height:250px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px 16px}
+.quiz-results .student-review{color:#ED6D83;font-weight:600;text-align:center;padding:24px 0}
 .quiz-results .completion-icon{width:108px;height:108px;overflow:visible}
 .quiz-results .completion-disc{transform-origin:50px 50px;animation:quiz-complete-circle .45s ease-out both}
 .quiz-results .completion-check{stroke-dasharray:66;stroke-dashoffset:66;filter:drop-shadow(0 1px 1px #28584035);animation:quiz-complete-check .5s .25s ease-out both}
