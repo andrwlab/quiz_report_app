@@ -1,5 +1,24 @@
 """Viewport actions without an iframe, with safe-area spacing for mobile browsers."""
+import base64
+from functools import lru_cache
+from io import BytesIO
+
 from streamlit.components.v2 import component
+
+APP_URL = "https://pendingquizzes.streamlit.app/"
+
+
+@lru_cache(maxsize=1)
+def app_qr_data_uri():
+    import qrcode
+    from qrcode.image.pil import PilImage
+    qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=8, border=4)
+    qr.add_data(APP_URL)
+    qr.make(fit=True)
+    image = qr.make_image(image_factory=PilImage, fill_color="black", back_color="white")
+    output = BytesIO()
+    image.save(output, format="PNG")
+    return "data:image/png;base64," + base64.b64encode(output.getvalue()).decode()
 
 HTML = '''
 <div class="quiz-mobile-shell">
@@ -7,7 +26,15 @@ HTML = '''
     <button type="button" class="quiz-fab" data-top aria-label="Back to search" title="Back to search"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20V4M5 11l7-7 7 7"/></svg></button>
     <button type="button" class="quiz-fab" data-plus aria-label="Report actions" aria-expanded="false" aria-controls="quiz-report-menu"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v16M4 12h16"/></svg></button>
   </nav>
-  <section id="quiz-report-menu" class="quiz-fab-menu" data-menu hidden aria-label="Share or download report">
+  <section id="quiz-report-menu" class="quiz-fab-menu" data-menu hidden aria-label="Share links and reports">
+    <button type="button" data-qr-toggle aria-expanded="false" aria-controls="quiz-app-qr">Share link via QR</button>
+    <div data-qr-panel id="quiz-app-qr" hidden>
+      <img data-qr-image alt="Scan to open Quiz Status" width="224" height="224"/>
+      <a data-app-link target="_blank" rel="noopener noreferrer">pendingquizzes.streamlit.app</a>
+      <button type="button" data-copy-link>Copy link</button>
+      <a data-save-qr download="quiz-status-qr.png">Download QR</a>
+      <p data-link-feedback role="status"></p>
+    </div>
     <p data-empty>Search for a student to share or download a report.</p>
     <label data-picker hidden>Student<select data-select aria-label="Student report"></select></label>
     <button type="button" data-share>Share report</button>
@@ -30,6 +57,9 @@ html,body,#root,[data-testid="stApp"],[data-testid="stAppViewContainer"],[data-t
 .quiz-fab-menu button,.quiz-fab-menu a,.quiz-fab-menu select{font:inherit;display:block;width:100%;margin:8px 0;padding:10px 12px;text-align:center;border-radius:22px!important;border:1px solid #696064;background:#302C2D;color:#F6F4F1;text-decoration:none;cursor:pointer}
 .quiz-fab-menu p{font-size:14px;line-height:1.5;margin:8px 0}
 .quiz-fab-menu [data-feedback]{color:#EACA7A}
+.quiz-fab-menu [data-qr-image]{display:block;width:100%;max-width:224px;height:auto;margin:12px auto;background:#FFF;border-radius:8px}
+.quiz-fab-menu [data-app-link]{font-size:13px;overflow-wrap:anywhere}
+.quiz-fab-menu [data-link-feedback]{color:#EACA7A}
 .quiz-fab-menu textarea{width:100%;height:150px;background:#141213;color:#F6F4F1;font:14px system-ui}
 '''
 
@@ -40,6 +70,8 @@ export default function({data, parentElement}) {
   template.hidden = true;
   root.hidden = false;
   document.body.append(root);
+  document.querySelectorAll('[data-quiz-action-portal]').forEach(el=>el.remove());
+  root.setAttribute('data-quiz-action-portal','');
   const top = root.querySelector('[data-top]');
   const plus = root.querySelector('[data-plus]');
   const menu = root.querySelector('[data-menu]');
@@ -52,6 +84,37 @@ export default function({data, parentElement}) {
   const select = root.querySelector('[data-select]');
   const reports = data?.reports || [];
   let selected = 0;
+  const qrToggle = root.querySelector('[data-qr-toggle]');
+  const qrPanel = root.querySelector('[data-qr-panel]');
+  const appUrl = data.appUrl;
+  qrPanel.id = 'quiz-active-app-qr';
+  qrToggle.setAttribute('aria-controls', qrPanel.id);
+  root.querySelector('[data-qr-image]').src = data.qrImage;
+  root.querySelector('[data-app-link]').href = appUrl;
+  root.querySelector('[data-save-qr]').href = data.qrImage;
+  qrToggle.onclick = () => {
+    qrPanel.hidden = !qrPanel.hidden;
+    qrToggle.setAttribute('aria-expanded', String(!qrPanel.hidden));
+  };
+  root.querySelector('[data-copy-link]').onclick = async () => {
+    const status = root.querySelector('[data-link-feedback]');
+    try {await navigator.clipboard.writeText(appUrl);status.textContent='Link copied.';}
+    catch (_) {
+      let area=qrPanel.querySelector('textarea');
+      if(!area){area=document.createElement('textarea');area.readOnly=true;area.setAttribute('aria-label','App link to copy');qrPanel.append(area);}
+      area.value=appUrl;area.focus();area.select();
+      status.textContent=document.execCommand('copy')?'Link copied.':'Select and copy the link above.';
+    }
+  };
+  let menuOpen = false;
+  function setMenuOpen(open) {
+    menuOpen = open;
+    menu.hidden = !open;
+    plus.setAttribute('aria-expanded', String(open));
+    plus.setAttribute('aria-label', open ? 'Close actions menu' : 'Open actions menu');
+    if(!open){qrPanel.hidden=true;qrToggle.setAttribute('aria-expanded','false');}
+  }
+  setMenuOpen(false);
 
   function theme(doc) {
     doc.documentElement.style.backgroundColor = '#141213';
@@ -140,12 +203,12 @@ export default function({data, parentElement}) {
   updatePdf();
   select.onchange=()=>{selected=Number(select.value);feedback.textContent='';updatePdf();};
   top.onclick=()=>{
-    menu.hidden=true;plus.setAttribute('aria-expanded','false');
+    setMenuOpen(false);
     const input=document.querySelector('input[aria-label="Student Number"],input[aria-label="Name or Student Number"]');
     if(input){input.scrollIntoView({behavior:'smooth',block:'center'});input.focus({preventScroll:true});}
     else {document.querySelector('[data-testid="stMain"]')?.scrollTo({top:0,behavior:'smooth'});window.scrollTo({top:0,behavior:'smooth'});}
   };
-  plus.onclick=()=>{menu.hidden=!menu.hidden;plus.setAttribute('aria-expanded',String(!menu.hidden));};
+  plus.onclick=event=>{event.preventDefault();event.stopPropagation();setMenuOpen(!menuOpen);};
   async function copy(){
     if(!reports[selected])return;
     const text=reports[selected].text;
@@ -154,12 +217,15 @@ export default function({data, parentElement}) {
   }
   copyButton.onclick=copy;
   share.onclick=async()=>{if(!reports[selected])return;if(navigator.share){try{await navigator.share({title:'Quiz Status',text:reports[selected].text});}catch(e){if(e.name!=='AbortError')await copy();}}else await copy();};
-  const onKey=e=>{if(e.key==='Escape'&&!menu.hidden){menu.hidden=true;plus.setAttribute('aria-expanded','false');plus.focus();}};
+  const onKey=e=>{if(e.key==='Escape'&&menuOpen){setMenuOpen(false);plus.focus();}};
+  const onOutside=e=>{if(menuOpen&&!root.contains(e.target))setMenuOpen(false);};
+  document.addEventListener('pointerdown',onOutside);
   document.addEventListener('keydown',onKey);
   return ()=>{
     if(shineTimer!==null)clearTimeout(shineTimer);
     glints.forEach(({overlay,animation})=>{animation.cancel();overlay.remove();});
     document.removeEventListener('keydown',onKey);
+    document.removeEventListener('pointerdown',onOutside);
     window.removeEventListener('resize',scheduleInsets);
     window.visualViewport?.removeEventListener('resize',scheduleInsets);
     window.visualViewport?.removeEventListener('scroll',scheduleInsets);
@@ -174,4 +240,4 @@ _actions = component('quiz_mobile_actions', html=HTML, css=CSS, js=JS)
 
 
 def render_actions(reports, *, shine_token=0):
-    _actions(data={'reports': reports, 'shineToken': shine_token}, key='quiz_mobile_actions', height=0, isolate_styles=False)
+    _actions(data={'reports': reports, 'shineToken': shine_token, 'appUrl': APP_URL, 'qrImage': app_qr_data_uri()}, key='quiz_mobile_actions', height=0, isolate_styles=False)
