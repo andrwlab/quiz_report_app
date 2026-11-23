@@ -22,6 +22,8 @@ def read_roster(content, *, allow_missing_numbers=False):
         sheets = pd.read_excel(io.BytesIO(content), sheet_name=None, header=None, dtype=str, keep_default_na=False)
         rows = []
         for sheet, raw in sheets.items():
+            if sheet != 'Students Lists' and (sheet == 'ACC SP-X-Support' or re.fullmatch(r'Watch List-T\d+', sheet)):
+                continue
             if len(raw) < 2:
                 raise ValidationError(f'Unexpected official roster sheet: {sheet}')
             blocks = [c for c in range(len(raw.columns) - 1) if raw.iloc[1, c] == 'ID#' and raw.iloc[1, c + 1] == 'Student Name']

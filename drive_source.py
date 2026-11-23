@@ -63,6 +63,10 @@ class DriveWorkbookStore(GoogleSheetsStore):
         if not all(name in properties for name in names):
             raise ValidationError('The data Sheet requires Students, Aliases, Quizzes and Publication tabs.')
         ranges=["'Students'!A1:C20000","'Aliases'!A1:D20000","'Quizzes'!A1:G100000","'Publication'!A1:B20"]
+        for title, bounds in [('Roster Import','A1:C20000'),('Cell Corrections','A1:I20000')]:
+            if title in properties:
+                names.append(title)
+                ranges.append(f"'{title}'!{bounds}")
         params=[('ranges',r) for r in ranges]+[('valueRenderOption','FORMATTED_VALUE')]
         result=self._request('GET',base+'/values:batchGet',params=params).json()
         values=result.get('valueRanges',[])
@@ -71,43 +75,54 @@ class DriveWorkbookStore(GoogleSheetsStore):
         tables={name:value.get('values',[]) for name,value in zip(names,values)}
         if tables['Aliases'][:1] != [['Grade','Subject','Report Name','Student Number']]:
             raise ValidationError('Aliases requires Grade, Subject, Report Name, Student Number.')
-        roster_rows=tables['Students']
+        roster_rows=tables.get('Roster Import') or tables['Students']
         if roster_rows[:1] != [['Student Number','Student Name','Group']]:
             raise ValidationError('Unexpected official roster headers.')
         padded=[row+['']*(3-len(row)) for row in roster_rows[1:] if any(row)]
         roster=read_roster(pd.DataFrame(padded,columns=roster_rows[0]).to_csv(index=False).encode())
         aliases=[dict(zip(tables['Aliases'][0], row+['']*(4-len(row)))) for row in tables['Aliases'][1:] if any(row)]
         publication={row[0]:row[1] if len(row)>1 else '' for row in tables['Publication'][1:] if row}
-        return properties, tables, roster, aliases, publication
+        corrections=[]
+        if 'Cell Corrections' in tables:
+            correction_headers=['Term','Week','Subject','Grade','Quiz Code','Status','Source Text','Student Numbers','Action']
+            if tables['Cell Corrections'][:1] != [correction_headers]:
+                raise ValidationError('Unexpected Cell Corrections headers.')
+            corrections=[dict(zip(correction_headers,row+['']*(9-len(row)))) for row in tables['Cell Corrections'][1:] if any(row)]
+        return properties, tables, roster, aliases, publication, corrections
 
     def _published(self, tables, roster, publication):
         self.publication_time=publication.get('Updated At') or None
         if tables['Quizzes']==[QUIZ_HEADERS] and publication.get('Status')=='Published' and publication.get('Source fingerprint'):
-            return [],roster
+            active_rows=tables['Students']
+            active_roster=read_roster(pd.DataFrame([row+['']*(3-len(row)) for row in active_rows[1:] if any(row)],columns=active_rows[0]).to_csv(index=False).encode())
+            return [],active_roster
         return source_snapshot(tables['Students'],tables['Quizzes'])
 
     def _fetch(self):
         # Complete source validation occurs before any write.
         file=self._single_file()
-        properties,tables,roster,aliases,publication=self._tables()
-        fingerprint=digest([file['id'],file['md5Checksum'],roster,aliases])
+        properties,tables,roster,aliases,publication,corrections=self._tables()
+        fingerprint=digest([file['id'],file['md5Checksum'],roster,aliases,corrections])
         if publication.get('Source fingerprint')==fingerprint:
             return self._published(tables,roster,publication)
         content=self._request('GET',f"https://www.googleapis.com/drive/v3/files/{file['id']}",params={'alt':'media','supportsAllDrives':'true'}).content
         if hashlib.md5(content).hexdigest()!=file['md5Checksum']:
             raise ValidationError('The upload changed during download. Waiting for a complete source.')
-        review=review_weekly_workbook(content,roster,aliases)
+        term_match=re.search(r'(?:^|[-_ ])(T\d+)(?:\.|$)',file['name'],re.IGNORECASE)
+        source_term=term_match.group(1).upper() if term_match else None
+        review=review_weekly_workbook(content,roster,aliases,corrections,source_term=source_term)
         records=review.require_valid()
         # Protect against a teacher replacing the file or roster during validation.
         latest=self._single_file()
-        _,_,latest_roster,latest_aliases,_=self._tables()
-        if digest([latest['id'],latest['md5Checksum'],latest_roster,latest_aliases])!=fingerprint:
+        _,_,latest_roster,latest_aliases,_,latest_corrections=self._tables()
+        if digest([latest['id'],latest['md5Checksum'],latest_roster,latest_aliases,latest_corrections])!=fingerprint:
             raise ValidationError('Source identities or file changed during import. Waiting for a stable version.')
         updated_at=datetime.now(ZoneInfo('America/Panama')).isoformat()
         quiz_rows=[QUIZ_HEADERS]+[[r['number'],r['name'],r['group'],r['subject'],r['code'],r['week'],r['status']] for r in records]
         publication_rows=[['Key','Value'],['Status','Published'],['Updated At',updated_at],['Time Zone','America/Panama'],['Source fingerprint',fingerprint],['Source File',file['name']],['Source quiz rows',str(review.quiz_rows)]]
         requests=[]
-        for title,rows in [('Quizzes',quiz_rows),('Publication',publication_rows)]:
+        roster_rows=[['Student Number','Student Name','Group']]+[[s['Student Number'],s['Student Name'],s['Group']] for s in roster]
+        for title,rows in [('Students',roster_rows),('Quizzes',quiz_rows),('Publication',publication_rows)]:
             prop=properties[title];grid=prop['gridProperties'];width=len(rows[0]);height=max(grid['rowCount'],len(rows))
             if height>grid['rowCount']:
                 requests.append({'updateSheetProperties':{'properties':{'sheetId':prop['sheetId'],'gridProperties':{'rowCount':height}},'fields':'gridProperties.rowCount'}})
@@ -123,7 +138,7 @@ class DriveWorkbookStore(GoogleSheetsStore):
             snapshot=super().read()
         except SheetsConnectionError:
             # After a cloud restart the durable Sheet still contains the last valid version.
-            _,tables,roster,_,publication=self._tables()
+            _,tables,roster,_,publication,_=self._tables()
             records,roster=self._published(tables,roster,publication)
             snapshot={**self.local.publish(records,roster),'source_warning':True}
             self._cached=snapshot

@@ -47,6 +47,10 @@ def student_index(roster):
         else:
             parts = name.split()
             given, surname = parts[0], ' '.join(parts[1:])
+        if ',' not in name and len(name.split()) >= 2:
+            parts = name.split()
+            last_given, alternate_family = parts[-1], parts[:-1]
+            keys.update(name_key(key) for key in [last_given, last_given+' '+alternate_family[0][0], last_given+' '+''.join(part[0] for part in alternate_family)])
         if not given or not surname:
             raise ValidationError('An official student name cannot be indexed.')
         first, family = given.split()[0], surname.split()[0]
@@ -71,7 +75,7 @@ def label_parts(cell):
             yield token
 
 
-def review_weekly_workbook(content, roster, aliases=()):
+def review_weekly_workbook(content, roster, aliases=(), corrections=(), source_term=None):
     review = WorkbookReview()
     by_number = {s['Student Number']: s for s in roster if s['Student Number']}
     if len(by_number) != sum(bool(s['Student Number']) for s in roster):
@@ -91,6 +95,19 @@ def review_weekly_workbook(content, roster, aliases=()):
         if not key[0] or not label or number not in by_number or grade_key(by_number[number]['Group']) != key[0] or key in overrides:
             raise ValidationError('An alias is invalid, duplicated or belongs to a different grade.')
         overrides[key] = number
+    cell_corrections = {}
+    for row in corrections:
+        if not any(str(value).strip() for value in row.values()):
+            continue
+        term, week, subject, grade, code, status, text, numbers = [str(row.get(k, '')).strip() for k in ['Term','Week','Subject','Grade','Quiz Code','Status','Source Text','Student Numbers']]
+        action = str(row.get('Action', 'Map students')).strip()
+        ids = [value.strip() for value in numbers.split(',') if value.strip()]
+        key = (term.upper(), week, name_key(subject), grade_key(grade), code, status, ' '.join(text.split()))
+        if not key[3] or not re.fullmatch(r'T\d+', term.upper()) or not re.fullmatch(r'Week\s+\d+', week) or not subject or not code or status not in ('Pending','Low Score') or not text or action not in ('Map students','Ignore note') or (action == 'Map students' and not ids) or (action == 'Ignore note' and ids) or len(set(ids)) != len(ids) or key in cell_corrections:
+            raise ValidationError('A cell correction is invalid or duplicated.')
+        if any(number not in by_number or grade_key(by_number[number]['Group']) != key[3] for number in ids):
+            raise ValidationError('A cell correction references an unknown student or another grade.')
+        cell_corrections[key] = ids
     book = load_workbook(BytesIO(content), read_only=True, data_only=True)
     formulas = load_workbook(BytesIO(content), read_only=True, data_only=False)
     seen = {}
@@ -101,6 +118,11 @@ def review_weekly_workbook(content, roster, aliases=()):
                 review.ignored_sheets.append(week)
                 continue
             rows = list(sheet.values)
+            term_match = re.search(r'\bT\d+\b', str(rows[0][0] or '') if rows else '', re.IGNORECASE)
+            term = (source_term or (term_match.group() if term_match else '')).upper()
+            if source_term and term_match and term_match.group().upper() != source_term.upper():
+                review.issues.append({'Week':week,'Row':1,'Subject':'','Grade':'','Quiz Code':'','Report Name':'','Reason':'Term in sheet title disagrees with the uploaded filename','Candidate Numbers':''})
+                continue
             formula_rows = list(formulas[week].values)
             subject, grade = None, None
             for index_row, raw in enumerate(rows):
@@ -142,23 +164,29 @@ def review_weekly_workbook(content, roster, aliases=()):
                     cell = cells[col]
                     if cell is None or not str(cell).strip():
                         continue
-                    labels = []
-                    for raw_label in label_parts(cell):
-                        parts = raw_label.split('. ')
-                        if len(parts) > 1 and all(len(index.get((grade, name_key(part)), set())) == 1 for part in parts):
-                            labels.extend(parts)
-                        else:
-                            labels.append(raw_label)
-                    for label in labels:
-                        candidate = overrides.get((grade, name_key(subject), name_key(label))) or overrides.get((grade, '', name_key(label)))
-                        candidates = {candidate} if candidate else index.get((grade, name_key(label)), set())
-                        if not candidates and len(label.split()) > 1:
-                            candidates = full_tokens.get((grade, tuple(sorted(name_key(label).split()))), set())
-
-                        if len(candidates) != 1:
-                            issue(label, 'Ambiguous student name' if candidates else 'No exact student identity', candidates)
-                            continue
-                        number = next(iter(candidates))
+                    cell_key = (term, week, name_key(subject), grade, c, status, ' '.join(str(cell).strip().split()))
+                    direct_numbers = cell_corrections.get(cell_key)
+                    if direct_numbers is not None:
+                        resolved = [(number, str(cell)) for number in direct_numbers]
+                    else:
+                        labels = []
+                        for raw_label in label_parts(cell):
+                            parts = raw_label.split('. ')
+                            if len(parts) > 1 and all(len(index.get((grade, name_key(part)), set())) == 1 for part in parts):
+                                labels.extend(parts)
+                            else:
+                                labels.append(raw_label)
+                        resolved = []
+                        for label in labels:
+                            candidate = overrides.get((grade, name_key(subject), name_key(label))) or overrides.get((grade, '', name_key(label)))
+                            candidates = {candidate} if candidate else index.get((grade, name_key(label)), set())
+                            if not candidates and len(label.split()) > 1:
+                                candidates = full_tokens.get((grade, tuple(sorted(name_key(label).split()))), set())
+                            if len(candidates) != 1:
+                                issue(label, 'Ambiguous student name' if candidates else 'No exact student identity', candidates)
+                                continue
+                            resolved.append((next(iter(candidates)), label))
+                    for number, label in resolved:
                         key = (number, subject, code, week)
                         if key in seen:
                             issue(label, 'Conflicting states' if seen[key] != status else 'Duplicate quiz entry', [number])
