@@ -12,9 +12,9 @@ if mode == 'Legacy report builder':
     from pathlib import Path
     runpy.run_path(str(Path(__file__).with_name('legacy_builder.py')), init_globals={'LEGACY_EMBEDDED': True})
     st.stop()
-if settings()[0] == 'google_sheets':
-    st.info('Google Sheets is the active source. Update Students and Quizzes through ChatGPT; the app validates changes before adopting them.')
-    if st.button('Check Google Sheets connection'):
+if settings()[0] in ('google_sheets', 'google_drive_folder'):
+    st.info('The configured online source is active. Updates are validated before replacing the published data.')
+    if st.button('Check source connection'):
         try:
             snapshot = get_store().read()
             if snapshot.get('source_warning'):

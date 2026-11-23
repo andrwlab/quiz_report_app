@@ -65,6 +65,8 @@ def source_snapshot(student_rows, quiz_rows):
 
 
 class GoogleSheetsStore:
+    OAUTH_SCOPES = ('https://www.googleapis.com/auth/spreadsheets.readonly',)
+
     def __init__(self, spreadsheet_id, directory=None, session=None, ttl=60, credentials_path=None):
         if not re.fullmatch(r'[A-Za-z0-9_-]+', spreadsheet_id):
             raise SheetsConnectionError('Invalid spreadsheet ID.')
@@ -82,7 +84,7 @@ class GoogleSheetsStore:
             try:
                 import google.auth
                 from google.auth.transport.requests import AuthorizedSession
-                scopes = ['https://www.googleapis.com/auth/spreadsheets.readonly']
+                scopes = list(self.OAUTH_SCOPES)
                 if self.credentials_path:
                     from google.oauth2.service_account import Credentials
                     credentials = Credentials.from_service_account_file(self.credentials_path, scopes=scopes)
