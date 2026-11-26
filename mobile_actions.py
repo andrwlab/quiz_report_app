@@ -161,6 +161,55 @@ export default function({data, parentElement}) {
   window.visualViewport?.addEventListener('resize', scheduleInsets);
   window.visualViewport?.addEventListener('scroll', scheduleInsets);
 
+  // Student numbers stay text to preserve leading zeroes; touch devices get a numeric keypad.
+  const numericSearch = (navigator.maxTouchPoints || 0) > 0 || window.matchMedia('(pointer: coarse)').matches;
+  const numberSelector = 'input[aria-label="Student Number"]';
+  const isNumberSearch = target => numericSearch && target?.matches?.(numberSelector);
+  function configureNumberSearch() {
+    if (!numericSearch) return;
+    document.querySelectorAll(numberSelector).forEach(input => {
+      input.setAttribute('inputmode', 'numeric');
+      input.setAttribute('pattern', '[0-9]*');
+      input.setAttribute('enterkeyhint', 'search');
+    });
+  }
+  function setNumberValue(input, value, caret) {
+    // Use the native setter so React receives the filtered value through its input event.
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, value);
+    input.setSelectionRange(caret, caret);
+  }
+  const numberBeforeInput = event => {
+    if (isNumberSearch(event.target) && event.inputType === 'insertText' && event.data && /[^0-9]/.test(event.data)) event.preventDefault();
+  };
+  const numberInput = event => {
+    const input = event.target;
+    if (!isNumberSearch(input)) return;
+    const clean = input.value.replace(/[^0-9]/g, '');
+    if (clean !== input.value) {
+      const caret = input.value.slice(0, input.selectionStart ?? input.value.length).replace(/[^0-9]/g, '').length;
+      setNumberValue(input, clean, caret);
+    }
+  };
+  const numberPaste = event => {
+    const input = event.target;
+    if (!isNumberSearch(input) || !event.clipboardData) return;
+    const text = event.clipboardData.getData('text');
+    if (!/[^0-9]/.test(text)) return;
+    event.preventDefault();
+    const digits = text.replace(/[^0-9]/g, '');
+    if (!digits) return;
+    const start = input.selectionStart ?? input.value.length;
+    const end = input.selectionEnd ?? start;
+    setNumberValue(input, input.value.slice(0, start) + digits + input.value.slice(end), start + digits.length);
+    input.dispatchEvent(new Event('input', {bubbles:true}));
+  };
+  configureNumberSearch();
+  const numberObserver = new MutationObserver(configureNumberSearch);
+  numberObserver.observe(document.body, {childList:true,subtree:true});
+  document.addEventListener('beforeinput', numberBeforeInput, true);
+  document.addEventListener('input', numberInput, true);
+  document.addEventListener('paste', numberPaste, true);
+
   // Replay only for the initial page and a submitted student search, not filters.
   let shineTimer = null;
   const glints = new Set();
@@ -222,6 +271,10 @@ export default function({data, parentElement}) {
   document.addEventListener('pointerdown',onOutside);
   document.addEventListener('keydown',onKey);
   return ()=>{
+    numberObserver.disconnect();
+    document.removeEventListener('beforeinput', numberBeforeInput, true);
+    document.removeEventListener('input', numberInput, true);
+    document.removeEventListener('paste', numberPaste, true);
     if(shineTimer!==null)clearTimeout(shineTimer);
     glints.forEach(({overlay,animation})=>{animation.cancel();overlay.remove();});
     document.removeEventListener('keydown',onKey);
